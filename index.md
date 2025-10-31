@@ -69,9 +69,9 @@ This project is licensed under the [Apache 2.0 License](https://www.apache.org/l
 
 ## Project Leaders
 
-- [Govindarajan Lakshmikanthan] - Project Leader
-  - GitHub: [@GovindarajanL](https://github.com/GovindarajanL)
-  - Email: govindarajan.lakshmikanthan@owasp.com/govind.lkanthan@gmail.com
+- [Zangiev Movsar] - Project Leader
+  - GitHub: 
+  - Email: 
 
 ## Related Projects
 
