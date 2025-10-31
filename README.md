@@ -95,5 +95,5 @@ This project adheres to the [OWASP Code of Conduct](CODE_OF_CONDUCT.md). By part
 
 - Project Leader: [Zangiev Movsar]
 - GitHub: 
-- Telegramm
+- Telegramm:
 - LinkedIn:
