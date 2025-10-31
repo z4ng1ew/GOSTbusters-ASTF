@@ -93,7 +93,7 @@ This project adheres to the [OWASP Code of Conduct](CODE_OF_CONDUCT.md). By part
 
 ## Contact
 
-- Project Leader: [Govindarajan Lakshmikanthan]
-- GitHub: [@GovindarajanL](https://github.com/GovindarajanL)
-- OWASP Project Page: [OWASP API Security Testing Framework](https://owasp.org/www-project-api-security-testing-framework/)
-- Slack: [#project-api-security-testing-framework]()
+- Project Leader: [Zangiev Movsar]
+- GitHub: 
+- Telegramm
+- LinkedIn:
