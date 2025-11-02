@@ -127,6 +127,15 @@ public class Scanner {
             // ✅ Определяем эндпоинты: OpenAPI → discovery → предоставленные
             List<EndpointInfo> endpoints = resolveEndpoints();
             
+            // ✅ ДОБАВЛЕНО: Отладочный вывод найденных эндпоинтов
+            System.out.println("🔍 Found " + endpoints.size() + " endpoints to scan:");
+            for (EndpointInfo endpoint : endpoints) {
+                System.out.println("  - " + endpoint.getMethod() + " " + endpoint.getFullUrl());
+                if (config.isVerbose()) {
+                    System.out.println("    Requires auth: " + endpoint.isRequiresAuthentication());
+                }
+            }
+            
             if (endpoints.isEmpty()) {
                 logger.warn("No endpoints found to scan. Check target URL or provide endpoints manually.");
                 return createEmptyScanResult();
@@ -140,6 +149,12 @@ public class Scanner {
             // Get applicable test cases
             List<TestCase> testCases = testCaseRegistry.getEnabledTestCases(config);
             logger.info("Running {} test cases against {} endpoints", testCases.size(), endpoints.size());
+
+            // ✅ ДОБАВЛЕНО: Отладочный вывод тест-кейсов
+            System.out.println("🧪 Running " + testCases.size() + " test cases:");
+            for (TestCase testCase : testCases) {
+                System.out.println("  - " + testCase.getId() + ": " + testCase.getName());
+            }
 
             // Calculate total tasks for progress tracking
             totalTasks.set(endpoints.size() * testCases.size());
@@ -214,11 +229,56 @@ public class Scanner {
         }
 
         scanEndTime = LocalDateTime.now();
+        
+        // ✅ ДОБАВЛЕНО: Детальный вывод результатов
+        logFindings(findings);
+        
         ScanResult result = new ScanResult(config.getTargetUrl(), findings);
         result.setScanStartTime(scanStartTime);
         result.setScanEndTime(scanEndTime);
 
         return result;
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Логирует детальную информацию о найденных уязвимостях
+     */
+    private void logFindings(List<Finding> findings) {
+        if (findings.isEmpty()) {
+            System.out.println("✅ No security findings detected");
+            return;
+        }
+        
+        System.out.println("\n🔍 SECURITY FINDINGS DETECTED (" + findings.size() + " total):");
+        for (Finding finding : findings) {
+            String severityPrefix = getSeverityPrefix(finding.getSeverity());
+            
+            System.out.println(severityPrefix + " [" + finding.getId() + "] " + 
+                             finding.getName() + ": " + 
+                             finding.getDescription().split("\n")[0]);
+            
+            if (config.isVerbose()) {
+                System.out.println("   Affected Resource: " + finding.getAffectedResource());
+                String remediation = finding.getRemediation();
+                if (remediation != null && !remediation.isEmpty()) {
+                    System.out.println("   Remediation: " + remediation.split("\n")[0]);
+                }
+            }
+        }
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Возвращает префикс для уровня серьезности
+     */
+    private String getSeverityPrefix(Severity severity) {
+        switch (severity) {
+            case CRITICAL: return "🔴 CRITICAL";
+            case HIGH: return "🟠 HIGH";
+            case MEDIUM: return "🟡 MEDIUM";
+            case LOW: return "🟢 LOW";
+            case INFO: return "🔵 INFO";
+            default: return "⚪ UNKNOWN";
+        }
     }
 
     /**
