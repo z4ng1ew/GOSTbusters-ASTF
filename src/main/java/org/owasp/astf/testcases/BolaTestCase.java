@@ -35,14 +35,6 @@ public class BolaTestCase implements TestCase {
     @Override
     public List<Finding> execute(EndpointInfo endpoint, HttpClient client) throws IOException {
         List<Finding> findings = new ArrayList<>();
-        
-        // ✅ Исправлено: получаем токен из системных свойств или заголовков клиента
-        String token = getTokenFromSystemProperties();
-        
-        if (token == null || token.isEmpty()) {
-            System.out.println("⚠️ BOLA test skipped: token not provided");
-            return findings;
-        }
 
         try {
             String url = endpoint.getFullUrl();
@@ -51,25 +43,25 @@ public class BolaTestCase implements TestCase {
             if (url.contains("{account_id}") || url.contains("account_id")) {
                 
                 // ✅ Получаем наши собственные account_id чтобы понять формат
-                List<String> ourAccountIds = getOurAccountIds(endpoint, client, token);
+                List<String> ourAccountIds = getOurAccountIds(endpoint, client);
                 
                 // ✅ Генерируем подозрительные account_id других команд
                 List<String> suspiciousAccountIds = generateSuspiciousAccountIds(ourAccountIds);
                 
                 System.out.println("🔍 BOLA test: testing " + suspiciousAccountIds.size() + " potentially foreign account IDs");
 
-                // ✅ Пытаемся получить доступ к каждому подозрительному account_id с нашим токеном
+                // ✅ Пытаемся получить доступ к каждому подозрительному account_id
                 for (String accountId : suspiciousAccountIds) {
                     String testUrl = url.replace("{account_id}", accountId)
                                        .replace("account_id", accountId);
 
-                    Map<String, String> headers = createHeaders(token);
+                    // ✅ ИСПРАВЛЕНИЕ: используем пустые заголовки - HttpClient уже настроен с авторизацией
+                    Map<String, String> headers = createHeaders();
                     
                     try {
+                        // ✅ HttpClient уже содержит заголовок Authorization из конфигурации
                         String response = client.get(testUrl, headers);
                         
-                        // ✅ Исправлено: убрана проверка статус кода через getLastStatusCode()
-                        // Вместо этого полагаемся на то, что если исключения нет - статус 200
                         JsonNode body = MAPPER.readTree(response);
                         
                         // ✅ Проверяем, что в ответе есть данные счета
@@ -127,33 +119,17 @@ public class BolaTestCase implements TestCase {
     }
 
     /**
-     * ✅ Получаем токен из системных свойств
-     */
-    private String getTokenFromSystemProperties() {
-        // Пробуем разные способы получить токен
-        String token = System.getProperty("attacker.token");
-        if (token == null || token.isEmpty()) {
-            token = System.getenv("ATTACKER_TOKEN");
-        }
-        if (token == null || token.isEmpty()) {
-            // Можно добавить другие способы получения токена
-            System.out.println("⚠️ Token not found in system properties or environment variables");
-        }
-        return token;
-    }
-
-    /**
      * ✅ Получаем наши собственные account_id чтобы понять формат ID
      */
-    private List<String> getOurAccountIds(EndpointInfo endpoint, HttpClient client, String token) throws IOException {
+    private List<String> getOurAccountIds(EndpointInfo endpoint, HttpClient client) throws IOException {
         List<String> accountIds = new ArrayList<>();
         
         try {
-            // ✅ Исправлено: используем baseUrl из endpoint вместо config
+            // ✅ Исправлено: используем baseUrl из endpoint
             String baseUrl = endpoint.getBaseUrl();
             
             // ✅ Сначала создаем согласие
-            String consentId = createAccountConsent(baseUrl, client, token);
+            String consentId = createAccountConsent(baseUrl, client);
             if (consentId == null) {
                 System.out.println("⚠️ Cannot create consent, using default test account IDs");
                 return Arrays.asList("acc-179-1", "acc-179-2");
@@ -161,7 +137,7 @@ public class BolaTestCase implements TestCase {
 
             // ✅ Получаем наши счета
             String accountsUrl = baseUrl + "/accounts?client_id=team179";
-            Map<String, String> headers = createHeaders(token, consentId);
+            Map<String, String> headers = createHeadersWithConsent(consentId);
             
             String response = client.get(accountsUrl, headers);
             JsonNode body = MAPPER.readTree(response);
@@ -183,11 +159,12 @@ public class BolaTestCase implements TestCase {
     /**
      * ✅ Создает согласие на доступ к счетам
      */
-    private String createAccountConsent(String baseUrl, HttpClient client, String token) throws IOException {
+    private String createAccountConsent(String baseUrl, HttpClient client) throws IOException {
         try {
             String consentUrl = baseUrl + "/account-consents/request";
+            
+            // ✅ ИСПРАВЛЕНИЕ: убрали Authorization заголовок - HttpClient уже настроен
             Map<String, String> headers = new HashMap<>();
-            headers.put("Authorization", "Bearer " + token);
             headers.put("Content-Type", "application/json");
             headers.put("x-requesting-bank", "team179");
             
@@ -196,7 +173,6 @@ public class BolaTestCase implements TestCase {
                 "  \"expiration_datetime\": \"2025-12-31T23:59:59Z\"\n" +
                 "}";
             
-            // ✅ ИСПРАВЛЕНИЕ: добавлен четвертый параметр contentType
             String response = client.post(consentUrl, headers, consentBody, "application/json");
             
             JsonNode body = MAPPER.readTree(response);
@@ -296,11 +272,10 @@ public class BolaTestCase implements TestCase {
     }
 
     /**
-     * ✅ Создает заголовки с указанным токеном
+     * ✅ Создает заголовки без токена - HttpClient уже настроен
      */
-    private Map<String, String> createHeaders(String token) {
+    private Map<String, String> createHeaders() {
         Map<String, String> headers = new HashMap<>();
-        headers.put("Authorization", "Bearer " + token);
         headers.put("x-consent-id", "consent-38e83d9f8dca");
         headers.put("x-requesting-bank", "team179");
         headers.put("Content-Type", "application/json");
@@ -308,11 +283,10 @@ public class BolaTestCase implements TestCase {
     }
 
     /**
-     * ✅ Создает заголовки с токеном и согласием
+     * ✅ Создает заголовки с согласием (без токена)
      */
-    private Map<String, String> createHeaders(String token, String consentId) {
+    private Map<String, String> createHeadersWithConsent(String consentId) {
         Map<String, String> headers = new HashMap<>();
-        headers.put("Authorization", "Bearer " + token);
         headers.put("x-consent-id", consentId);
         headers.put("x-requesting-bank", "team179");
         headers.put("Content-Type", "application/json");

@@ -106,3 +106,13 @@ This project adheres to the [OWASP Code of Conduct](CODE_OF_CONDUCT.md). By part
 - КОМАНДЫ:
 
 mvn clean package
+
+
+mvn clean package -DskipTests     - без тестов
+
+
+
+
+
+
+
