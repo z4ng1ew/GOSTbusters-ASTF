@@ -129,3 +129,35 @@ java -jar target\api-security-testing-framework-1.0-SNAPSHOT.jar scan --target h
 
 - полная команда:
 java -jar target\api-security-testing-framework-1.0-SNAPSHOT.jar scan --target https://vbank.open.bankingapi.ru --auth-header "Authorization: Bearer JJqqH33ePjnfCMlyHFfz7Px09SMWvzhO" --openapi vbank-openapi.yaml --threads 10 --timeout 30 --verbose --output-format json --output-file scan_results.json
+
+
+
+
+
+- 03.11.2025 - 0:43
+
+java -jar target\api-security-testing-framework-1.0-SNAPSHOT.jar scan --target https://vbank.open.bankingapi.ru --auth-header "Authorization: Bearer JJqqH33ePjnfCMlyHFfz7Px09SMWvzhO" --openapi "C:\Users\user\Desktop\www-project-api-security-testing-framework-main\vbank-openapi.yaml" --output-file scan_results.json
+
+
+
+
+
+
+
+
+curl https://vbank.open.bankingapi.ru/openapi.json -o vbank-openapi.json    -  скачать Источник спецификации
+
+
+
+
+
+
+
+
+
+
+
+Что,Где взять
+OpenAPI-спецификация,https://vbank.open.bankingapi.ru/openapi.json
+Целевой хост API,https://api.bankingapi.ru
+Токен,Через client_credentials с client_id=team179", "client_secret=JJqqH33ePjnfCMlyHFfz7Px09SMWvzhO

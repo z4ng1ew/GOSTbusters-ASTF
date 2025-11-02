@@ -33,8 +33,10 @@ org\owasp\astf\core\config\ScanConfig.class
 org\owasp\astf\integrations\detection\CIEnvironmentDetector.class
 org\owasp\astf\integrations\detection\CIEnvironmentProvider.class
 org\owasp\astf\core\discovery\EndpointDiscoveryService.class
+org\owasp\astf\core\Scanner$1.class
 org\owasp\astf\core\Scanner.class
 org\owasp\astf\reporting\SarifReportGenerator.class
+org\owasp\astf\cli\ASTFCli$1.class
 org\owasp\astf\reporting\HtmlReportGenerator.class
 org\owasp\astf\cli\ASTFCli.class
 org\owasp\astf\integrations\providers\github\GitHubActionsIntegration.class

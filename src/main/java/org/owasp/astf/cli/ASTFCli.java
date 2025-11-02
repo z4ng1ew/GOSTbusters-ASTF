@@ -4,7 +4,7 @@ import org.owasp.astf.core.Scanner;
 import org.owasp.astf.core.config.ScanConfig;
 import org.owasp.astf.core.result.ScanResult;
 import org.owasp.astf.core.result.Finding;
-import org.owasp.astf.report.JsonReportGenerator;
+import org.owasp.astf.reporting.JsonReportGenerator;
 
 public class ASTFCli {
     public static void main(String[] args) {
@@ -36,6 +36,7 @@ public class ASTFCli {
             if (config.isUseGost()) {
                 System.out.println("🌐 GOST Gateway: Enabled");
             }
+            System.out.println("💾 Output: " + config.getOutputFile());
 
             // Запуск сканера
             Scanner scanner = new Scanner(config);
@@ -65,31 +66,68 @@ public class ASTFCli {
         for (int i = 1; i < args.length; i++) {
             switch (args[i]) {
                 case "--target":
-                    if (i + 1 < args.length) config.setTargetUrl(args[++i]);
+                    if (i + 1 < args.length) {
+                        config.setTargetUrl(args[++i]);
+                        System.out.println("✅ Set target: " + config.getTargetUrl());
+                    }
                     break;
                 case "--auth-header":
-                    if (i + 1 < args.length) config.setAuthHeader(args[++i]);
+                    if (i + 1 < args.length) {
+                        config.setAuthHeader(args[++i]);
+                        System.out.println("✅ Set auth header: " + maskToken(config.getAuthHeader()));
+                    }
                     break;
                 case "--openapi":
-                    if (i + 1 < args.length) config.setOpenApiSpecPath(args[++i]);
+                    if (i + 1 < args.length) {
+                        config.setOpenApiSpecPath(args[++i]);
+                        System.out.println("✅ Set OpenAPI spec: " + config.getOpenApiSpecPath());
+                    }
                     break;
                 case "--use-gost":
                     config.setUseGost(true);
+                    System.out.println("✅ GOST gateway enabled");
                     break;
                 case "--output-file":
-                    if (i + 1 < args.length) config.setOutputFile(args[++i]);
+                    if (i + 1 < args.length) {
+                        config.setOutputFile(args[++i]);
+                        System.out.println("✅ Set output file: " + config.getOutputFile());
+                    }
                     break;
                 case "--verbose":
                     config.setVerbose(true);
+                    System.out.println("✅ Verbose mode enabled");
                     break;
                 case "--threads":
-                    if (i + 1 < args.length) config.setThreads(Integer.parseInt(args[++i]));
+                    if (i + 1 < args.length) {
+                        try {
+                            config.setThreads(Integer.parseInt(args[++i]));
+                            System.out.println("✅ Set threads: " + config.getThreads());
+                        } catch (NumberFormatException e) {
+                            System.err.println("⚠️  Invalid threads value: " + args[i]);
+                        }
+                    }
                     break;
                 case "--timeout":
-                    if (i + 1 < args.length) config.setTimeoutMinutes(Integer.parseInt(args[++i]));
+                    if (i + 1 < args.length) {
+                        try {
+                            config.setTimeoutMinutes(Integer.parseInt(args[++i]));
+                            System.out.println("✅ Set timeout: " + config.getTimeoutMinutes() + " minutes");
+                        } catch (NumberFormatException e) {
+                            System.err.println("⚠️  Invalid timeout value: " + args[i]);
+                        }
+                    }
                     break;
                 case "--output-format":
-                    if (i + 1 < args.length) config.setOutputFormat(args[++i]);
+                    if (i + 1 < args.length) {
+                        // ✅ ИСПРАВЛЕНИЕ: Преобразуем строку в enum с обработкой ошибок
+                        try {
+                            config.setOutputFormat(ScanConfig.OutputFormat.valueOf(args[++i].toUpperCase()));
+                            System.out.println("✅ Set output format: " + config.getOutputFormat());
+                        } catch (IllegalArgumentException e) {
+                            System.err.println("⚠️ Unsupported output format. Using JSON.");
+                            config.setOutputFormat(ScanConfig.OutputFormat.JSON);
+                        }
+                    }
                     break;
                 default:
                     // Игнорируем неизвестные аргументы
@@ -103,6 +141,16 @@ public class ASTFCli {
         }
 
         return config;
+    }
+
+    /**
+     * ✅ Маскирует токен в логах для безопасности
+     */
+    private static String maskToken(String authHeader) {
+        if (authHeader == null || authHeader.length() < 10) {
+            return "[hidden]";
+        }
+        return authHeader.substring(0, 10) + "..." + authHeader.substring(authHeader.length() - 4);
     }
 
     /**
@@ -120,9 +168,10 @@ public class ASTFCli {
             System.out.println();
             
             for (Finding finding : result.getFindings()) {
-                System.out.println("🔍 [" + finding.getSeverity() + "] " + finding.getId());
-                System.out.println("   " + finding.getName());
-                System.out.println("   URL: " + finding.getAffectedResource());
+                String severityIcon = getSeverityIcon(finding.getSeverity());
+                // ✅ ИСПРАВЛЕНИЕ: Используем правильные методы - getId() и getEndpoint()
+                System.out.println(severityIcon + " [" + finding.getSeverity() + "] " + 
+                    finding.getId() + ": " + finding.getEndpoint());
                 System.out.println("   Description: " + finding.getDescription().split("\n")[0]);
                 System.out.println();
             }
@@ -140,16 +189,53 @@ public class ASTFCli {
     }
 
     /**
+     * ✅ Возвращает иконку для уровня серьезности
+     */
+    private static String getSeverityIcon(org.owasp.astf.core.result.Severity severity) {
+        switch (severity) {
+            case CRITICAL: return "🔴";
+            case HIGH: return "🟠"; 
+            case MEDIUM: return "🟡";
+            case LOW: return "🟢";
+            case INFO: return "🔵";
+            default: return "⚪";
+        }
+    }
+
+    /**
      * ✅ Сохраняет отчёт в файл
      */
     private static void saveReport(ScanResult result, String outputFile) {
         try {
+            System.out.println("💾 Generating report: " + outputFile);
+            
             JsonReportGenerator reportGenerator = new JsonReportGenerator();
-            reportGenerator.generate(result, outputFile);
-            System.out.println("💾 Report saved to: " + outputFile);
+            
+            // ✅ ИСПРАВЛЕНИЕ: Используем правильный метод generateReport()
+            reportGenerator.generateReport(result, outputFile);
+            
+            System.out.println("✅ Report successfully saved to: " + outputFile);
+            
+            // ✅ Дополнительная информация о файле
+            java.io.File file = new java.io.File(outputFile);
+            if (file.exists()) {
+                System.out.println("📁 File size: " + file.length() + " bytes");
+                System.out.println("📝 Findings in report: " + result.getFindings().size());
+            } else {
+                System.err.println("❌ Report file was not created: " + outputFile);
+            }
+            
         } catch (Exception e) {
             System.err.println("❌ Failed to save report: " + e.getMessage());
-            // Не прерываем выполнение, т.к. сканирование уже завершено
+            System.err.println("💡 Check if the output directory exists and is writable");
+            
+            // ✅ ДОБАВЛЕНО: Более детальная диагностика
+            System.err.println("📋 Diagnostic info:");
+            System.err.println("  - Output file: " + outputFile);
+            System.err.println("  - Current directory: " + System.getProperty("user.dir"));
+            System.err.println("  - File separator: " + java.io.File.separator);
+            
+            e.printStackTrace();
         }
     }
 

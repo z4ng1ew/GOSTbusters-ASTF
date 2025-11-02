@@ -253,12 +253,13 @@ public class Scanner {
         for (Finding finding : findings) {
             String severityPrefix = getSeverityPrefix(finding.getSeverity());
             
+            // ✅ ИСПРАВЛЕНИЕ: getName() -> getTitle(), getAffectedResource() -> getEndpoint()
             System.out.println(severityPrefix + " [" + finding.getId() + "] " + 
-                             finding.getName() + ": " + 
+                             finding.getTitle() + ": " + 
                              finding.getDescription().split("\n")[0]);
             
             if (config.isVerbose()) {
-                System.out.println("   Affected Resource: " + finding.getAffectedResource());
+                System.out.println("   Affected Resource: " + finding.getEndpoint());
                 String remediation = finding.getRemediation();
                 if (remediation != null && !remediation.isEmpty()) {
                     System.out.println("   Remediation: " + remediation.split("\n")[0]);
