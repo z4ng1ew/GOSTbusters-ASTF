@@ -56,6 +56,12 @@ public class ScanConfig {
     private int maxFindings = 0;
     private List<String> excludeSeverities;
 
+    // ✅ НОВЫЕ ПОЛЯ ДЛЯ ХАКАТОНА
+    private String openApiSpecPath;
+    private boolean useGost = false;
+    private String attackerToken;
+    private String victimToken;
+
     /**
      * Creates a new scan configuration with default settings.
      */
@@ -619,6 +625,80 @@ public class ScanConfig {
      */
     public void setExcludeSeverities(List<String> excludeSeverities) {
         this.excludeSeverities = excludeSeverities;
+    }
+
+    // ✅ НОВЫЕ ГЕТТЕРЫ И СЕТТЕРЫ ДЛЯ ХАКАТОНА
+
+    /**
+     * Gets the path to OpenAPI specification file.
+     *
+     * @return The OpenAPI specification file path
+     */
+    public String getOpenApiSpecPath() {
+        return openApiSpecPath;
+    }
+
+    /**
+     * Sets the path to OpenAPI specification file.
+     *
+     * @param openApiSpecPath The OpenAPI specification file path
+     */
+    public void setOpenApiSpecPath(String openApiSpecPath) {
+        this.openApiSpecPath = openApiSpecPath;
+    }
+
+    /**
+     * Checks if GOST gateway should be used.
+     *
+     * @return true if GOST gateway should be used
+     */
+    public boolean isUseGost() {
+        return useGost;
+    }
+
+    /**
+     * Sets whether GOST gateway should be used.
+     *
+     * @param useGost true to use GOST gateway
+     */
+    public void setUseGost(boolean useGost) {
+        this.useGost = useGost;
+    }
+
+    /**
+     * Gets the attacker token for BOLA testing.
+     *
+     * @return The attacker token
+     */
+    public String getAttackerToken() {
+        return attackerToken;
+    }
+
+    /**
+     * Sets the attacker token for BOLA testing.
+     *
+     * @param attackerToken The attacker token
+     */
+    public void setAttackerToken(String attackerToken) {
+        this.attackerToken = attackerToken;
+    }
+
+    /**
+     * Gets the victim token for BOLA testing.
+     *
+     * @return The victim token
+     */
+    public String getVictimToken() {
+        return victimToken;
+    }
+
+    /**
+     * Sets the victim token for BOLA testing.
+     *
+     * @param victimToken The victim token
+     */
+    public void setVictimToken(String victimToken) {
+        this.victimToken = victimToken;
     }
 
     /**

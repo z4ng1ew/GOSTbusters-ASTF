@@ -1,3 +1,5 @@
+package org.owasp.astf.cli;  // ✅ ДОБАВЬТЕ ЭТУ СТРОКУ В САМОЕ НАЧАЛО!
+
 import org.owasp.astf.core.config.ScanConfig;
 
 public class ASTFCli {

@@ -7,7 +7,6 @@ org\owasp\astf\testcases\TestCaseRegistry.class
 org\owasp\astf\core\EndpointInfo.class
 org\owasp\astf\integrations\providers\github\GitHubActionsConfigAdapter.class
 org\owasp\astf\reporting\ReportGeneratorFactory$1.class
-ASTFCli.class
 org\owasp\astf\reporting\ReportGeneratorFactory.class
 org\owasp\astf\core\config\ConfigLoader.class
 org\owasp\astf\integrations\security\SecurityConfiguration.class
@@ -37,5 +36,6 @@ org\owasp\astf\core\discovery\EndpointDiscoveryService.class
 org\owasp\astf\core\Scanner.class
 org\owasp\astf\reporting\SarifReportGenerator.class
 org\owasp\astf\reporting\HtmlReportGenerator.class
+org\owasp\astf\cli\ASTFCli.class
 org\owasp\astf\integrations\providers\github\GitHubActionsIntegration.class
 org\owasp\astf\core\http\HttpClient$1.class

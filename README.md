@@ -97,3 +97,12 @@ This project adheres to the [OWASP Code of Conduct](CODE_OF_CONDUCT.md). By part
 - GitHub: 
 - Telegramm:
 - LinkedIn:
+
+
+
+
+
+
+- КОМАНДЫ:
+
+mvn clean package

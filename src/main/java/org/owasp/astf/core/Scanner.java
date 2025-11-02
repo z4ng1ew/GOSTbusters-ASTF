@@ -2,6 +2,7 @@ package org.owasp.astf.core;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -19,6 +20,7 @@ import org.owasp.astf.core.http.HttpClient;
 import org.owasp.astf.core.result.Finding;
 import org.owasp.astf.core.result.ScanResult;
 import org.owasp.astf.core.result.Severity;
+import org.owasp.astf.openapi.OpenApiLoader;
 import org.owasp.astf.testcases.TestCase;
 import org.owasp.astf.testcases.TestCaseRegistry;
 
@@ -54,15 +56,60 @@ public class Scanner {
      * @param config The scan configuration
      */
     public Scanner(ScanConfig config) {
-        this.config = config;
-        this.httpClient = new HttpClient(config);
+        // ✅ Обработка GOST-шлюза перед созданием зависимостей
+        ScanConfig effectiveConfig = processGostConfig(config);
+        
+        this.config = effectiveConfig;
+        this.httpClient = new HttpClient(effectiveConfig);
         this.testCaseRegistry = new TestCaseRegistry();
-        this.discoveryService = new EndpointDiscoveryService(config, httpClient);
+        this.discoveryService = new EndpointDiscoveryService(effectiveConfig, httpClient);
 
         // Initialize severity counters
         for (Severity severity : Severity.values()) {
             findingsBySeverity.put(severity, new AtomicInteger(0));
         }
+    }
+
+    /**
+     * Processes GOST gateway configuration if enabled.
+     *
+     * @param originalConfig The original configuration
+     * @return Effective configuration (original or GOST-modified)
+     */
+    private ScanConfig processGostConfig(ScanConfig originalConfig) {
+        if (!originalConfig.isUseGost()) {
+            return originalConfig;
+        }
+
+        // ✅ Применяем GOST трансформацию к targetUrl
+        String originalUrl = originalConfig.getTargetUrl();
+        String gostUrl = originalUrl.replace("https://vbank.open.bankingapi.ru", "https://api.gost.bankingapi.ru:8443");
+        
+        // Создаем копию конфига с обновленным URL
+        ScanConfig gostConfig = new ScanConfig();
+        gostConfig.setTargetUrl(gostUrl);
+        gostConfig.setHeaders(new HashMap<>(originalConfig.getHeaders()));
+        gostConfig.setEndpoints(new ArrayList<>(originalConfig.getEndpoints()));
+        gostConfig.setThreads(originalConfig.getThreads());
+        gostConfig.setTimeoutMinutes(originalConfig.getTimeoutMinutes());
+        gostConfig.setDiscoveryEnabled(originalConfig.isDiscoveryEnabled());
+        gostConfig.setEnabledTestCaseIds(new ArrayList<>(originalConfig.getEnabledTestCaseIds()));
+        gostConfig.setDisabledTestCaseIds(new ArrayList<>(originalConfig.getDisabledTestCaseIds()));
+        gostConfig.setOutputFormat(originalConfig.getOutputFormat());
+        gostConfig.setOutputFile(originalConfig.getOutputFile());
+        gostConfig.setVerbose(originalConfig.isVerbose());
+        gostConfig.setUseGost(true); // Сохраняем флаг
+        gostConfig.setOpenApiSpecPath(originalConfig.getOpenApiSpecPath());
+        gostConfig.setAttackerToken(originalConfig.getAttackerToken());
+        gostConfig.setVictimToken(originalConfig.getVictimToken());
+        gostConfig.setAuthHeader(originalConfig.getAuthHeader());
+        gostConfig.setMaxRequestsPerSecond(originalConfig.getMaxRequestsPerSecond());
+        gostConfig.setFollowRedirects(originalConfig.isFollowRedirects());
+        gostConfig.setProxyHost(originalConfig.getProxyHost());
+        gostConfig.setProxyPort(originalConfig.getProxyPort());
+
+        logger.info("GOST gateway enabled. Original URL: {} -> GOST URL: {}", originalUrl, gostUrl);
+        return gostConfig;
     }
 
     /**
@@ -77,19 +124,17 @@ public class Scanner {
         try {
             logger.info("Starting API security scan for target: {}", config.getTargetUrl());
 
-            // Determine if we need to discover endpoints or use provided ones
-            List<EndpointInfo> endpoints = new ArrayList<>();
-            if (config.isDiscoveryEnabled() && config.getEndpoints().isEmpty()) {
-                logger.info("No endpoints provided. Attempting endpoint discovery...");
-                endpoints = discoverEndpoints();
-            } else {
-                endpoints = config.getEndpoints();
-                logger.info("Using {} provided endpoints", endpoints.size());
-            }
-
+            // ✅ Определяем эндпоинты: OpenAPI → discovery → предоставленные
+            List<EndpointInfo> endpoints = resolveEndpoints();
+            
             if (endpoints.isEmpty()) {
                 logger.warn("No endpoints found to scan. Check target URL or provide endpoints manually.");
                 return createEmptyScanResult();
+            }
+
+            // ✅ Применяем GOST трансформацию к эндпоинтам если нужно
+            if (config.isUseGost()) {
+                endpoints = applyGostToEndpoints(endpoints);
             }
 
             // Get applicable test cases
@@ -108,6 +153,7 @@ public class Scanner {
                         CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                             try {
                                 logger.debug("Executing {} on {}", testCase.getId(), endpoint);
+                                // ✅ Исправлено: убран параметр config
                                 List<Finding> testFindings = testCase.execute(endpoint, httpClient);
 
                                 if (!testFindings.isEmpty()) {
@@ -126,7 +172,9 @@ public class Scanner {
                             } catch (Exception e) {
                                 logger.error("Error executing test case {} on endpoint {}: {}",
                                         testCase.getId(), endpoint.getPath(), e.getMessage());
-                                logger.debug("Exception details:", e);
+                                if (config.isVerbose()) {
+                                    logger.debug("Exception details:", e);
+                                }
                             } finally {
                                 // Update progress
                                 int completed = completedTasks.incrementAndGet();
@@ -160,7 +208,9 @@ public class Scanner {
 
         } catch (Exception e) {
             logger.error("Unhandled exception during scan: {}", e.getMessage());
-            logger.debug("Exception details:", e);
+            if (config.isVerbose()) {
+                logger.debug("Exception details:", e);
+            }
         }
 
         scanEndTime = LocalDateTime.now();
@@ -172,12 +222,69 @@ public class Scanner {
     }
 
     /**
-     * Attempts to discover API endpoints for the target.
+     * Resolves endpoints from multiple sources in priority order.
      *
-     * @return A list of discovered endpoints
+     * @return List of endpoints to scan
      */
-    private List<EndpointInfo> discoverEndpoints() {
-        return discoveryService.discoverEndpoints();
+    private List<EndpointInfo> resolveEndpoints() {
+        List<EndpointInfo> endpoints = new ArrayList<>();
+
+        // ✅ 1. Пробуем загрузить из OpenAPI спецификации
+        if (config.getOpenApiSpecPath() != null && !config.getOpenApiSpecPath().isEmpty()) {
+            try {
+                logger.info("Loading endpoints from OpenAPI spec: {}", config.getOpenApiSpecPath());
+                var openAPI = OpenApiLoader.load(config.getOpenApiSpecPath());
+                // ✅ Исправлено: убран второй параметр
+                endpoints.addAll(OpenApiLoader.getEndpoints(openAPI));
+                logger.info("Discovered {} endpoints from OpenAPI", endpoints.size());
+            } catch (Exception e) {
+                logger.warn("Failed to load endpoints from OpenAPI spec: {}", e.getMessage());
+                if (config.isVerbose()) {
+                    logger.debug("OpenAPI loading error:", e);
+                }
+            }
+        }
+
+        // ✅ 2. Если OpenAPI не дал результатов и discovery включен - используем discovery
+        if (endpoints.isEmpty() && config.isDiscoveryEnabled()) {
+            logger.info("No endpoints from OpenAPI. Attempting endpoint discovery...");
+            endpoints = discoveryService.discoverEndpoints();
+        }
+
+        // ✅ 3. Если всё еще нет эндпоинтов - используем предоставленные
+        if (endpoints.isEmpty() && !config.getEndpoints().isEmpty()) {
+            endpoints = config.getEndpoints();
+            logger.info("Using {} provided endpoints", endpoints.size());
+        }
+
+        return endpoints;
+    }
+
+    /**
+     * Applies GOST gateway URL transformation to all endpoints.
+     *
+     * @param endpoints Original endpoints
+     * @return Endpoints with GOST gateway URL
+     */
+    private List<EndpointInfo> applyGostToEndpoints(List<EndpointInfo> endpoints) {
+        List<EndpointInfo> gostEndpoints = new ArrayList<>();
+        String gostBaseUrl = "https://api.gost.bankingapi.ru:8443";
+        
+        for (EndpointInfo endpoint : endpoints) {
+            // Создаем новый EndpointInfo с GOST baseUrl
+            EndpointInfo gostEndpoint = new EndpointInfo(
+                gostBaseUrl,
+                endpoint.getPath(),
+                endpoint.getMethod(),
+                endpoint.getContentType(),
+                endpoint.getRequestBody(),
+                endpoint.isRequiresAuthentication()
+            );
+            gostEndpoints.add(gostEndpoint);
+        }
+        
+        logger.info("Applied GOST gateway transformation to {} endpoints", gostEndpoints.size());
+        return gostEndpoints;
     }
 
     /**
