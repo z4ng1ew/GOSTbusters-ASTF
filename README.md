@@ -161,3 +161,7 @@ curl https://vbank.open.bankingapi.ru/openapi.json -o vbank-openapi.json    -  �
 OpenAPI-спецификация,https://vbank.open.bankingapi.ru/openapi.json
 Целевой хост API,https://api.bankingapi.ru
 Токен,Через client_credentials с client_id=team179", "client_secret=JJqqH33ePjnfCMlyHFfz7Px09SMWvzhO
+
+
+
+

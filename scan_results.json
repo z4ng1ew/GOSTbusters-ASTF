@@ -1,19 +1,19 @@
 {
   "targetUrl" : "https://vbank.open.bankingapi.ru/",
-  "scanStartTime" : "2025-11-03T01:31:06.5581502",
-  "scanEndTime" : "2025-11-03T01:31:37.7127458",
+  "scanStartTime" : "2025-11-03T16:47:10.8229723",
+  "scanEndTime" : "2025-11-03T16:47:42.0855654",
   "summary" : {
-    "totalFindings" : 11,
+    "totalFindings" : 19,
     "bySeverity" : {
       "critical" : 0,
-      "high" : 10,
+      "high" : 18,
       "medium" : 1,
       "low" : 0,
       "info" : 0
     }
   },
   "findings" : [ {
-    "id" : "81d28fc5-b402-4d9c-b8d2-98f270c07d20",
+    "id" : "f39eb8f5-0cb8-449e-b34c-53831755eb11",
     "title" : "Authentication Endpoint Requires Manual Review",
     "description" : "Authentication endpoints should be carefully reviewed for weak credentials, account lockout mechanisms, and proper token validation.",
     "severity" : "MEDIUM",
@@ -21,15 +21,7 @@
     "endpoint" : "POST /auth/bank-token",
     "remediation" : "Implement strong password policies, account lockout after failed attempts, and proper token generation using industry standard algorithms."
   }, {
-    "id" : "58154a91-2ef0-43c4-b355-27e14b9ee962",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "POST /accounts",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "aeb6ceee-7d0e-4ae5-afd5-4864b93b703b",
+    "id" : "1df79988-1c4d-46ca-9c4f-b3309358e6eb",
     "title" : "Missing Authentication Controls",
     "description" : "The API endpoint appears to be accessible without proper authentication.",
     "severity" : "HIGH",
@@ -37,31 +29,7 @@
     "endpoint" : "PUT /accounts/{account_id}/close",
     "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
   }, {
-    "id" : "c57ae54b-dc8b-4b26-87ef-6aa38e016a36",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "PUT /accounts/{account_id}/status",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "f4d0378f-c796-414e-9d48-2c69a17f4081",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "POST /product-agreement-consents/request",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "1c0a0a18-6bff-4f24-a0ad-c48e9a3ebf70",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "DELETE /product-agreement-consents/{consent_id}",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "0f14661b-9587-4558-a1e7-5f1b8ac0c5fa",
+    "id" : "e48849c7-40bd-46c3-a7d6-bd408e9c9710",
     "title" : "Missing Authentication Controls",
     "description" : "The API endpoint appears to be accessible without proper authentication.",
     "severity" : "HIGH",
@@ -69,7 +37,15 @@
     "endpoint" : "DELETE /payment-consents/{consent_id}",
     "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
   }, {
-    "id" : "2273a32d-f05f-4d53-b624-b1e70a14f479",
+    "id" : "98b21213-f4a3-45c6-942f-ce6086c37aca",
+    "title" : "Missing Authentication Controls",
+    "description" : "The API endpoint appears to be accessible without proper authentication.",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "PUT /accounts/{account_id}/status",
+    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
+  }, {
+    "id" : "ff7c589b-b0df-433a-b432-af84b19c12bd",
     "title" : "Missing Authentication Controls",
     "description" : "The API endpoint appears to be accessible without proper authentication.",
     "severity" : "HIGH",
@@ -77,7 +53,7 @@
     "endpoint" : "DELETE /product-agreements/{agreement_id}",
     "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
   }, {
-    "id" : "7830a3fd-b39b-4362-b19e-b90540269711",
+    "id" : "3422f0fd-f39a-407c-9fdb-ec33c6303117",
     "title" : "Missing Authentication Controls",
     "description" : "The API endpoint appears to be accessible without proper authentication.",
     "severity" : "HIGH",
@@ -85,7 +61,31 @@
     "endpoint" : "POST /product-agreements",
     "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
   }, {
-    "id" : "a4069061-a56a-41c5-a681-2305fac7ff73",
+    "id" : "1f7d5ea4-81fe-4a3f-a475-8e7de490aaa1",
+    "title" : "Missing Authentication Controls",
+    "description" : "The API endpoint appears to be accessible without proper authentication.",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "DELETE /product-agreement-consents/{consent_id}",
+    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
+  }, {
+    "id" : "c3101a77-39f8-4247-b60b-9308c1efb7b0",
+    "title" : "Missing Authentication Controls",
+    "description" : "The API endpoint appears to be accessible without proper authentication.",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "GET /accounts/{account_id}/transactions",
+    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
+  }, {
+    "id" : "6792ce64-7912-461a-916d-08e1685e3d8f",
+    "title" : "Missing Authentication Controls",
+    "description" : "The API endpoint appears to be accessible without proper authentication.",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "POST /product-agreement-consents/request",
+    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
+  }, {
+    "id" : "ed083db9-8b19-494b-8dd2-a004f0712a49",
     "title" : "Missing Authentication Controls",
     "description" : "The API endpoint appears to be accessible without proper authentication.",
     "severity" : "HIGH",
@@ -93,12 +93,76 @@
     "endpoint" : "POST /payments",
     "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
   }, {
-    "id" : "0332b770-1b9d-46e5-9bc9-a6f3ca8b1153",
+    "id" : "9ebe5bed-70b3-4e35-a8a1-97eaf8f24b76",
     "title" : "Missing Authentication Controls",
     "description" : "The API endpoint appears to be accessible without proper authentication.",
     "severity" : "HIGH",
     "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "GET /accounts/{account_id}/transactions",
+    "endpoint" : "POST /accounts",
+    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
+  }, {
+    "id" : "da4f88fd-f13b-49a9-a0f4-eea712d6af0d",
+    "title" : "Missing Authentication Controls",
+    "description" : "The API endpoint appears to be accessible without proper authentication.",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "GET /payments/{payment_id}",
+    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
+  }, {
+    "id" : "ae3de287-d6a4-47c4-8353-236165c06b28",
+    "title" : "Missing Authentication Controls",
+    "description" : "The API endpoint appears to be accessible without proper authentication.",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "GET /accounts",
+    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
+  }, {
+    "id" : "32b575aa-75e3-4b7c-80cf-035b8e0d4176",
+    "title" : "Missing Authentication Controls",
+    "description" : "The API endpoint appears to be accessible without proper authentication.",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "GET /product-agreement-consents/{consent_id}",
+    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
+  }, {
+    "id" : "f5c8b8fe-1e48-4920-ad42-26aa4ac40bca",
+    "title" : "Missing Authentication Controls",
+    "description" : "The API endpoint appears to be accessible without proper authentication.",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "GET /accounts/{account_id}/balances",
+    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
+  }, {
+    "id" : "fa886ffd-9f49-4ed9-bc0b-a676024b5f25",
+    "title" : "Missing Authentication Controls",
+    "description" : "The API endpoint appears to be accessible without proper authentication.",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "GET /accounts/{account_id}",
+    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
+  }, {
+    "id" : "c54ef4fd-4a52-4eba-aded-8fdf9c204e88",
+    "title" : "Missing Authentication Controls",
+    "description" : "The API endpoint appears to be accessible without proper authentication.",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "GET /payment-consents/{consent_id}",
+    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
+  }, {
+    "id" : "13170351-f1b1-49ed-b454-037a4b36dd75",
+    "title" : "Missing Authentication Controls",
+    "description" : "The API endpoint appears to be accessible without proper authentication.",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "GET /product-agreements/{agreement_id}",
+    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
+  }, {
+    "id" : "0d63200b-8c4f-4fbf-9e57-bb7a6ea1f9ba",
+    "title" : "Missing Authentication Controls",
+    "description" : "The API endpoint appears to be accessible without proper authentication.",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "GET /product-agreements",
     "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
   } ]
 }

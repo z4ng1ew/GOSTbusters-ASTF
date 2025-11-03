@@ -37,10 +37,11 @@ public class BolaTestCase implements TestCase {
         List<Finding> findings = new ArrayList<>();
 
         try {
-            String url = endpoint.getFullUrl();
+            String baseUrl = endpoint.getBaseUrl();
+            String path = endpoint.getPath();
             
             // ✅ Ищем эндпоинты с параметрами account_id
-            if (url.contains("{account_id}") || url.contains("account_id")) {
+            if (path.contains("{account_id}") || path.contains("account_id")) {
                 
                 // ✅ Получаем наши собственные account_id чтобы понять формат
                 List<String> ourAccountIds = getOurAccountIds(endpoint, client);
@@ -52,8 +53,11 @@ public class BolaTestCase implements TestCase {
 
                 // ✅ Пытаемся получить доступ к каждому подозрительному account_id
                 for (String accountId : suspiciousAccountIds) {
-                    String testUrl = url.replace("{account_id}", accountId)
-                                       .replace("account_id", accountId);
+                    String testPath = path.replace("{account_id}", accountId)
+                                        .replace("account_id", accountId);
+                    
+                    // ✅ ИСПРАВЛЕНИЕ: Формируем полный URL с правильной схемой
+                    String testUrl = buildFullUrl(baseUrl, testPath);
 
                     // ✅ ИСПРАВЛЕНИЕ: используем пустые заголовки - HttpClient уже настроен с авторизацией
                     Map<String, String> headers = createHeaders();
@@ -107,7 +111,7 @@ public class BolaTestCase implements TestCase {
                 // ✅ Если не нашли уязвимостей, добавляем информационное сообщение
                 if (findings.isEmpty()) {
                     System.out.println("✅ BOLA test completed: no vulnerabilities found with current test data");
-                    findings.add(createInfoFinding(url, suspiciousAccountIds));
+                    findings.add(createInfoFinding(buildFullUrl(baseUrl, path), suspiciousAccountIds));
                 }
             }
         } catch (Exception e) {
@@ -135,8 +139,8 @@ public class BolaTestCase implements TestCase {
                 return Arrays.asList("acc-179-1", "acc-179-2");
             }
 
-            // ✅ Получаем наши счета
-            String accountsUrl = baseUrl + "/accounts?client_id=team179";
+            // ✅ ИСПРАВЛЕНИЕ: Формируем полный URL с правильной схемой
+            String accountsUrl = buildFullUrl(baseUrl, "/accounts?client_id=team179");
             Map<String, String> headers = createHeadersWithConsent(consentId);
             
             String response = client.get(accountsUrl, headers);
@@ -161,7 +165,8 @@ public class BolaTestCase implements TestCase {
      */
     private String createAccountConsent(String baseUrl, HttpClient client) throws IOException {
         try {
-            String consentUrl = baseUrl + "/account-consents/request";
+            // ✅ ИСПРАВЛЕНИЕ: Формируем полный URL с правильной схемой
+            String consentUrl = buildFullUrl(baseUrl, "/account-consents/request");
             
             // ✅ ИСПРАВЛЕНИЕ: убрали Authorization заголовок - HttpClient уже настроен
             Map<String, String> headers = new HashMap<>();
@@ -185,6 +190,20 @@ public class BolaTestCase implements TestCase {
             System.out.println("❌ Error creating consent: " + e.getMessage());
         }
         return null;
+    }
+
+    /**
+     * ✅ Вспомогательный метод для построения полного URL
+     */
+    private String buildFullUrl(String baseUrl, String path) {
+        // ✅ Убедимся, что baseUrl заканчивается на '/', а path не начинается с '/'
+        if (baseUrl.endsWith("/") && path.startsWith("/")) {
+            return baseUrl + path.substring(1);
+        } else if (!baseUrl.endsWith("/") && !path.startsWith("/")) {
+            return baseUrl + "/" + path;
+        } else {
+            return baseUrl + path;
+        }
     }
 
     /**
