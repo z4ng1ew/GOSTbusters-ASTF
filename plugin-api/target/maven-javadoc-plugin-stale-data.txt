@@ -1,0 +1,57 @@
+@options
+@packages
+-classpath
+'C:/Users/user/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.15.3/jackson-databind-2.15.3.jar;C:/Users/user/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.15.3/jackson-annotations-2.15.3.jar;C:/Users/user/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.15.3/jackson-core-2.15.3.jar;C:/Users/user/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.15.3/jackson-dataformat-yaml-2.15.3.jar;C:/Users/user/.m2/repository/org/yaml/snakeyaml/2.1/snakeyaml-2.1.jar;C:/Users/user/.m2/repository/org/apache/logging/log4j/log4j-api/2.22.1/log4j-api-2.22.1.jar'
+-encoding
+'UTF-8'
+-protected
+-source
+'21'
+-sourcepath
+'C:/Users/user/Desktop/www-project-api-security-testing-framework-main/plugin-api/src/main/java;C:/Users/user/Desktop/www-project-api-security-testing-framework-main/plugin-api/target/generated-sources/annotations'
+-author
+-bottom
+'Copyright &#169; 2025. All rights reserved.'
+-charset
+'UTF-8'
+-d
+'C:/Users/user/Desktop/www-project-api-security-testing-framework-main/plugin-api/target/apidocs'
+-docencoding
+'UTF-8'
+-doctitle
+'OWASP ASTF Plugin API 1.0-SNAPSHOT API'
+-use
+-version
+-windowtitle
+'OWASP ASTF Plugin API 1.0-SNAPSHOT API'
+org.owasp.astf.plugin
+org.owasp.astf.shared
+org.owasp.astf.shared.result
+C:\Users\user\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.15.3\jackson-databind-2.15.3.jar = 1761914635916
+C:\Users\user\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.15.3\jackson-annotations-2.15.3.jar = 1761914635394
+C:\Users\user\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.15.3\jackson-core-2.15.3.jar = 1761914635538
+C:\Users\user\.m2\repository\com\fasterxml\jackson\dataformat\jackson-dataformat-yaml\2.15.3\jackson-dataformat-yaml-2.15.3.jar = 1761914636357
+C:\Users\user\.m2\repository\org\yaml\snakeyaml\2.1\snakeyaml-2.1.jar = 1761914636432
+C:\Users\user\.m2\repository\org\apache\logging\log4j\log4j-api\2.22.1\log4j-api-2.22.1.jar = 1761914635645
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\src\main\java = 1762282600496
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\generated-sources\annotations = 1762291429206
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\allclasses-index.html = 1762291455475
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\allpackages-index.html = 1762291455478
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\copy.svg = 1762291455521
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\element-list = 1762291455386
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\help-doc.html = 1762291455512
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\index-all.html = 1762291455501
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\index.html = 1762291455461
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\link.svg = 1762291455523
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\member-search-index.js = 1762291455484
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\module-search-index.js = 1762291455480
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\overview-summary.html = 1762291455507
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\overview-tree.html = 1762291455457
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\package-search-index.js = 1762291455481
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\script.js = 1762291455518
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\search-page.js = 1762291455529
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\search.html = 1762291455504
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\search.js = 1762291455527
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\stylesheet.css = 1762291455515
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\tag-search-index.js = 1762291455485
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\plugin-api\target\apidocs\type-search-index.js = 1762291455483
