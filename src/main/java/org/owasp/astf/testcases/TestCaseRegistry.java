@@ -34,10 +34,20 @@ public class TestCaseRegistry {
         register(new IdorTestCase());
         register(new InsecureDeserializationTestCase());
         register(new MassAssignmentTestCase());
-        // register(new SecurityMisconfigurationTestCase());
-        // register(new ImproperAssetsManagementTestCase());
+        register(new SecurityMisconfigurationTestCase());
+        register(new ImproperAssetsManagementTestCase());
         
-        logger.info("Registered {} test cases", availableTestCases.size());
+        // ✅ ДОБАВЛЕНО: Новые специализированные тест-кейсы
+        register(new FunctionLevelAuthTestCase());
+        register(new CORSMisconfigurationTestCase());
+        register(new SSRFTestCase());
+        register(new XXETestCase());
+        register(new JWTTestCase());
+        
+        logger.info("✅ Registered {} test cases:", availableTestCases.size());
+        for (TestCase testCase : availableTestCases) {
+            logger.info("   • {} - {}", testCase.getId(), testCase.getName());
+        }
     }
 
     /**

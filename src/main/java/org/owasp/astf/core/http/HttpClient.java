@@ -34,7 +34,7 @@ import okhttp3.ResponseBody;
  * <p>
  * This class provides a robust HTTP client implementation that supports:
  * <ul>
- *   <li>All common HTTP methods (GET, POST, PUT, DELETE, etc.)</li>
+ *   <li>All common HTTP methods (GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD)</li>
  *   <li>Various authentication methods</li>
  *   <li>Cookie handling</li>
  *   <li>Proxy configuration</li>
@@ -127,15 +127,29 @@ public class HttpClient {
     }
 
     /**
-     * Makes a DELETE request to the specified URL.
-     *
-     * @param url The target URL
-     * @param headers Additional headers to include
-     * @return The response body as a string
-     * @throws IOException If the request fails
+     * ✅ УЛУЧШЕНО: Метод DELETE с правильной обработкой
      */
     public String delete(String url, Map<String, String> headers) throws IOException {
-        return executeRequest(createRequest(url, "DELETE", headers, null, null));
+        Request request = createRequest(url, "DELETE", headers, null, null);
+        try (Response response = client.newCall(request).execute()) {
+            if (response.body() != null) {
+                return response.body().string();
+            }
+            return "";
+        }
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Метод OPTIONS для получения информации о поддерживаемых методах
+     */
+    public String options(String url, Map<String, String> headers) throws IOException {
+        Request request = createRequest(url, "OPTIONS", headers, null, null);
+        try (Response response = client.newCall(request).execute()) {
+            if (response.body() != null) {
+                return response.body().string();
+            }
+            return "";
+        }
     }
 
     /**
@@ -168,6 +182,44 @@ public class HttpClient {
             return extractHeaders(response);
         } finally {
             response.close();
+        }
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Универсальный метод для выполнения HTTP запросов
+     */
+    public String request(String method, String url, Map<String, String> headers, 
+                         String contentType, String body) throws IOException {
+        MediaType mediaType = contentType != null ? MediaType.parse(contentType) : null;
+        RequestBody requestBody = null;
+
+        if (body != null && mediaType != null) {
+            requestBody = RequestBody.create(body, mediaType);
+        }
+
+        Request request = createRequest(url, method, headers, mediaType, requestBody);
+        return executeRequest(request);
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Метод для получения статус-кода ответа
+     */
+    public int getStatusCode(String url, Map<String, String> headers) throws IOException {
+        Request request = createRequest(url, "GET", headers, null, null);
+        try (Response response = client.newCall(request).execute()) {
+            return response.code();
+        }
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Метод для получения полного ответа (код + заголовки + тело)
+     */
+    public HttpResponse getFullResponse(String url, Map<String, String> headers) throws IOException {
+        Request request = createRequest(url, "GET", headers, null, null);
+        try (Response response = client.newCall(request).execute()) {
+            String body = response.body() != null ? response.body().string() : "";
+            Map<String, List<String>> responseHeaders = extractHeaders(response);
+            return new HttpResponse(response.code(), responseHeaders, body);
         }
     }
 
@@ -235,6 +287,7 @@ public class HttpClient {
             case "GET" -> requestBuilder.get();
             case "HEAD" -> requestBuilder.head();
             case "DELETE" -> requestBuilder.delete();
+            case "OPTIONS" -> requestBuilder.method("OPTIONS", null); // ✅ ДОБАВЛЕНО: OPTIONS method
             case "POST" -> requestBuilder.post(body);
             case "PUT" -> requestBuilder.put(body);
             case "PATCH" -> requestBuilder.patch(body);
@@ -334,6 +387,49 @@ public class HttpClient {
         };
 
         builder.authenticator(authenticator);
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Класс для представления полного HTTP ответа
+     */
+    public static class HttpResponse {
+        private final int statusCode;
+        private final Map<String, List<String>> headers;
+        private final String body;
+
+        public HttpResponse(int statusCode, Map<String, List<String>> headers, String body) {
+            this.statusCode = statusCode;
+            this.headers = headers;
+            this.body = body;
+        }
+
+        public int getStatusCode() {
+            return statusCode;
+        }
+
+        public Map<String, List<String>> getHeaders() {
+            return headers;
+        }
+
+        public String getBody() {
+            return body;
+        }
+
+        public boolean isSuccessful() {
+            return statusCode >= 200 && statusCode < 300;
+        }
+
+        public boolean isRedirect() {
+            return statusCode >= 300 && statusCode < 400;
+        }
+
+        public boolean isClientError() {
+            return statusCode >= 400 && statusCode < 500;
+        }
+
+        public boolean isServerError() {
+            return statusCode >= 500 && statusCode < 600;
+        }
     }
 
     /**
