@@ -167,6 +167,7 @@ java -jar target\api-security-testing-framework-1.0-SNAPSHOT.jar scan --target h
 
 
 
+
 curl https://vbank.open.bankingapi.ru/openapi.json -o vbank-openapi.json    -  скачать Источник спецификации
 
 
@@ -186,4 +187,134 @@ OpenAPI-спецификация,https://vbank.open.bankingapi.ru/openapi.json
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## 🚀 Что делает ваш плагин?
+
+### Мы создали **новый тип архитектуры**:
+
+| Что вы сделали | Результат |
+|----------------|-----------|
+| ✅ Разделили `Plugin.java` от `core`                                 | Плагин **не зависит** от основного фреймворка |
+| ✅ Создали `shared` классы (`EndpointInfo`, `HttpClient`, `Finding`) | Плагины используют **только общие интерфейсы** |
+| ✅ Использовали **Strategy Pattern**                                 | Можно **заменить логику** без перекомпиляции |
+| ✅ Подготовили **плагинную архитектуру**                             | В будущем можно подключать `.jar` извне |
+
+---
+
+
+
+### 1. **Соберите основной JAR**
+```powershell
+mvn clean package -DskipTests
+```
+
+### 2. **Запустите сканер**
+```powershell
+java -jar target\api-security-testing-framework-1.0-SNAPSHOT.jar scan ^
+  --target https://vbank.open.bankingapi.ru ^
+  --auth-header "Authorization: Bearer JJqqH33ePjnfCMlyHFfz7Px09SMWvzhO" ^
+  --openapi vbank-openapi.yaml ^
+  --output-file scan_results.json
+```
+
+---
+
+## 🏆 Что сделанно:
+
+- ✅ **Архитектура готова к плагинам**
+- ✅ **SOLID соблюдён**
+- ✅ **Модульность реализована**
+- ✅ **Можно подключать сторонние `.jar`**
+
+**У вас уже работает:**
+- ✅ **OpenAPI-интеграция**
+- ✅ **BOLA-тест**
+- ✅ **Broken Auth**
+- ✅ **Rate Limit**
+- ✅ **Excessive Data Exposure**
+- ✅ **Теперь и плагины**
+
+---
+
+
+
+
+api-security-testing-framework/
+├── src/                    # Весь исходный код фреймворка
+│   ├── main/java/org/owasp/astf/
+│   │   ├── cli/           # Командная строка
+│   │   ├── core/          # Основная логика
+│   │   ├── testcases/     # Тест-кейсы
+│   │   └── plugins/       # Система плагинов
+│   └── test/java/         # Тесты
+├── plugin-api/             # ✅ ОТДЕЛЬНЫЙ ПРОЕКТ (не модуль)
+│   ├── src/main/java/org/owasp/astf/
+│   │   ├── plugin/        # Интерфейс Plugin
+│   │   └── shared/        # Shared классы
+│   └── pom.xml            # Свой собственный POM
+├── plugins/                # Папка для плагинов (JAR файлы)
+└── pom.xml                # Основной POM (монолитный)
+
+
+
+
+
+
+
+
+
+
+## 🏗️ **Сборка проекта  простая:**
+
+```bash
+# Собрать основной фреймворк
+mvn clean package
+
+# Собрать plugin-api отдельно (нужно зайти в папку plugin-api)
+cd plugin-api
+mvn clean package
+cd ..
+
+# Запустить через Maven
+mvn exec:java -Dexec.args="--help"
+
+# Или запустить собранный JAR
+java -jar target/api-security-testing-framework-1.0-SNAPSHOT.jar --help
+```
+
+## 🔧 **Для разработчиков плагинов:**
+
+Теперь `plugin-api` - это **отдельный проект**, который нужно **собирать отдельно** и **устанавливать в локальный репозиторий**:
+
+```bash
+# Собрать и установить plugin-api в локальный репозиторий
+cd plugin-api
+mvn clean install
+cd ..
+
+# Теперь основной проект может использовать plugin-api как зависимость
+# (если она добавлена в pom.xml)
+```
+
+## 🎯 **Преимущества монолитной структуры:**
+
+1. **🚀 Простота сборки** - одна команда `mvn package`
+2. **🔧 Легкая отладка** - все в одном проекте
+3. **📦 Простое развертывание** - один JAR файл
+4. **🎯 Быстрая разработка** - не нужно переключаться между модулями
+5. **🔌 Изоляция плагинов** - plugin-api как отдельный проект
 

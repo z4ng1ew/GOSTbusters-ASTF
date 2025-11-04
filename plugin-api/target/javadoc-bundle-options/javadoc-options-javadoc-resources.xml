@@ -6,5 +6,5 @@
   <tagletArtifacts>
     <tagletArtifact />
   </tagletArtifacts>
-  <javadocResourcesDirectory>src/main/javadoc</javadocResourcesDirectory>
+  <javadocResourcesDirectory>src\main\javadoc</javadocResourcesDirectory>
 </javadocOptions>
