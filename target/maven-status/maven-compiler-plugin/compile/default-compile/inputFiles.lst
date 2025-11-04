@@ -1,11 +1,13 @@
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\cli\ASTFCli.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\integrations\core\ConfigAdapter.java
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\testcases\InjectionTestCase.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\cli\CICommand.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\integrations\detection\CIEnvironmentProvider.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\reporting\XmlReportGenerator.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\integrations\providers\github\GitHubActionsResultProcessor.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\testcases\TestCaseRegistry.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\reporting\ReportGeneratorFactory.java
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\testcases\MassAssignmentTestCase.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\integrations\core\ResultProcessor.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\testcases\BolaTestCase.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\integrations\IntegrationManager.java
@@ -20,6 +22,8 @@ C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\j
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\testcases\BrokenAuthenticationTestCase.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\integrations\core\CIEnvironment.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\reporting\JsonReportGenerator.java
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\testcases\ExcessiveDataExposureTestCase.java
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\testcases\IdorTestCase.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\core\Scanner.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\core\result\Severity.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\integrations\providers\github\GitHubActionsConfigAdapter.java
@@ -27,8 +31,10 @@ C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\j
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\openapi\OpenApiLoader.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\integrations\providers\github\GitHubActionsEnvironment.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\core\result\Finding.java
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\testcases\InsecureDeserializationTestCase.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\core\config\ConfigLoader.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\core\result\ScanResult.java
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\testcases\RateLimitBypassTestCase.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\testcases\TestCase.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\core\discovery\EndpointDiscoveryService.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\reporting\ReportGenerator.java

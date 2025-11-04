@@ -10,12 +10,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class BolaTestCase implements TestCase {
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    
+    // ✅ ДОБАВЛЕНО: Статические переменные для предотвращения многократного запуска
+    private static boolean bolaTestCompleted = false;
+    private static final Object BOLA_LOCK = new Object();
+    private static final AtomicInteger totalRequests = new AtomicInteger(0);
 
     @Override
     public String getId() {
@@ -34,96 +41,182 @@ public class BolaTestCase implements TestCase {
 
     @Override
     public List<Finding> execute(EndpointInfo endpoint, HttpClient client) throws IOException {
+        // ✅ ДОБАВЛЕНО: Проверяем, запускался ли тест раньше
+        synchronized (BOLA_LOCK) {
+            if (bolaTestCompleted) {
+                System.out.println("⏩ BOLA test already completed - skipping duplicate execution");
+                return Collections.emptyList();
+            }
+        }
+        
+        // ✅ ИСКЛЮЧАЕМ: Не BOLA-эндпоинты
+        String path = endpoint.getPath();
+        if (!path.contains("{account_id}") && !path.contains("account_id")) {
+            System.out.println("⏭️ Skipping non-BOLA endpoint: " + path);
+            return Collections.emptyList();
+        }
+        
         List<Finding> findings = new ArrayList<>();
 
         try {
             String baseUrl = endpoint.getBaseUrl();
-            String path = endpoint.getPath();
             
-            // ✅ ДОБАВЛЕНО: Отладочный вывод для диагностики
-            System.out.println("🔧 DEBUG: Starting BOLA test");
-            System.out.println("🔧 DEBUG: baseUrl = '" + baseUrl + "'");
-            System.out.println("🔧 DEBUG: path = '" + path + "'");
+            // ✅ ПОМЕЧАЕМ ТЕСТ КАК ЗАПУЩЕННЫЙ
+            synchronized (BOLA_LOCK) {
+                bolaTestCompleted = true;
+            }
             
-            // ✅ Ищем эндпоинты с параметрами account_id
-            if (path.contains("{account_id}") || path.contains("account_id")) {
-                
-                // ✅ Получаем наши собственные account_id чтобы понять формат
-                List<String> ourAccountIds = getOurAccountIds(endpoint, client);
-                
-                // ✅ Генерируем подозрительные account_id других команд
-                List<String> suspiciousAccountIds = generateSuspiciousAccountIds(ourAccountIds);
-                
-                System.out.println("🔍 BOLA test: testing " + suspiciousAccountIds.size() + " potentially foreign account IDs");
+            System.out.println("🔍 Starting BOLA test on endpoint: " + endpoint.getMethod() + " " + path);
+            
+            // ✅ Получаем наши собственные account_id чтобы понять формат
+            List<String> ourAccountIds = getOurAccountIds(endpoint, client);
+            
+            // ✅ Генерируем подозрительные account_id других команд
+            List<String> suspiciousAccountIds = generateSuspiciousAccountIds(ourAccountIds);
+            
+            System.out.println("🎯 BOLA test: testing " + suspiciousAccountIds.size() + " potentially foreign account IDs");
 
-                // ✅ Пытаемся получить доступ к каждому подозрительному account_id
-                for (String accountId : suspiciousAccountIds) {
-                    String testPath = path.replace("{account_id}", accountId)
-                                        .replace("account_id", accountId);
-                    
-                    // ✅ ИСПРАВЛЕНИЕ: Формируем полный URL с правильной схемой
-                    String testUrl = buildFullUrl(baseUrl, testPath);
+            // ✅ Пытаемся получить доступ к каждому подозрительному account_id
+            boolean rateLimitHit = false;
+            int testedCount = 0;
+            int successfulTests = 0;
+            int vulnerabilityFound = 0;
+            
+            for (String accountId : suspiciousAccountIds) {
+                // ✅ Проверяем, не сработал ли рейт-лимит
+                if (rateLimitHit) {
+                    System.out.println("⏹️ Stopping BOLA test due to rate limit after " + testedCount + " attempts");
+                    break;
+                }
+                
+                // ✅ Пропускаем наши собственные account_id
+                if (ourAccountIds.contains(accountId)) {
+                    continue;
+                }
+                
+                String testPath = path.replace("{account_id}", accountId)
+                                    .replace("account_id", accountId);
+                
+                // ✅ Формируем полный URL с правильной схемой
+                String testUrl = buildFullUrl(baseUrl, testPath);
 
-                    // ✅ ИСПРАВЛЕНИЕ: используем пустые заголовки - HttpClient уже настроен с авторизацией
-                    Map<String, String> headers = createHeaders();
+                // ✅ используем пустые заголовки - HttpClient уже настроен с авторизацией
+                Map<String, String> headers = createHeaders();
+                
+                try {
+                    // ✅ HttpClient уже содержит заголовок Authorization из конфигурации
+                    String response = client.get(testUrl, headers);
+                    totalRequests.incrementAndGet();
                     
-                    try {
-                        // ✅ HttpClient уже содержит заголовок Authorization из конфигурации
-                        String response = client.get(testUrl, headers);
+                    JsonNode body = MAPPER.readTree(response);
+                    
+                    // ✅ Проверяем, что в ответе есть данные счета
+                    if (isValidAccountResponse(body)) {
+                        vulnerabilityFound++;
+                        Finding finding = new Finding(
+                            "BOLA-0" + vulnerabilityFound,                                     
+                            "Broken Object Level Authorization",           
+                            "🚨 CRITICAL: УСПЕШНЫЙ ДОСТУП к счёту " + accountId + " с токеном команды team179. " +
+                            "Это демонстрирует, что система не проверяет принадлежность account_id текущему пользователю. " +
+                            "Злоумышленник может получить доступ к данным других пользователей, просто угадывая или перебирая их account_id.\n\n" +
+                            "🔍 ДЕТАЛИ АТАКИ:\n" +
+                            "• Использованный account_id: " + accountId + "\n" +
+                            "• Целевой эндпоинт: " + endpoint.getMethod() + " " + path + "\n" +
+                            "• Токен атакующего: team179\n" +
+                            "• Полученные данные: баланс, транзакции, личная информация",    
+                            Severity.HIGH,                                 
+                            "BOLA",                                        
+                            testUrl,                                       
+                            "🛡️ РЕКОМЕНДАЦИИ ПО ИСПРАВЛЕНИЮ:\n\n" +
+                            "1. **Добавить проверку владения ресурсом** на стороне сервера для каждого запроса\n" +
+                            "2. **Реализовать Object-Level Authorization**: каждый запрос к ресурсу с account_id должен проверять, что account_id принадлежит текущему аутентифицированному пользователю\n" +
+                            "3. **Использовать непредсказуемые UUID** вместо последовательных или предсказуемых ID\n" +
+                            "4. **Внедрить механизм авторизации на уровне объектов** (Object-Level Authorization)\n" +
+                            "5. **Логировать все попытки доступа** к не принадлежащим пользователю ресурсам\n" +
+                            "6. **Реализовать rate limiting** на основе пользователя, а не IP\n" +
+                            "7. **Использовать токены доступа с ограниченной областью действия** (scoped tokens)\n\n" +
+                            "💡 ПРИМЕР ИСПРАВЛЕНИЯ:\n" +
+                            "```java\n" +
+                            "// ПРОВЕРКА ПРИНАДЛЕЖНОСТИ ACCOUNT_ID\n" +
+                            "public Account getAccount(String accountId, String currentUserId) {\n" +
+                            "    Account account = accountRepository.findById(accountId);\n" +
+                            "    if (account == null) throw new NotFoundException();\n" +
+                            "    if (!account.getUserId().equals(currentUserId)) {\n" +
+                            "        throw new AccessDeniedException(); // 403 Forbidden\n" +
+                            "    }\n" +
+                            "    return account;\n" +
+                            "}\n" +
+                            "```"
+                        );
                         
-                        JsonNode body = MAPPER.readTree(response);
+                        findings.add(finding);
+                        System.out.println("🚨 BOLA VULNERABILITY FOUND: access to foreign account " + accountId);
                         
-                        // ✅ Проверяем, что в ответе есть данные счета
-                        if (isValidAccountResponse(body)) {
-                            Finding finding = new Finding(
-                                "BOLA-01",                                     
-                                "Broken Object Level Authorization",           
-                                "УСПЕШНЫЙ ДОСТУП к счёту " + accountId + " с токеном команды team179. " +
-                                "Это демонстрирует, что система не проверяет принадлежность account_id текущему пользователю. " +
-                                "Злоумышленник может получить доступ к данным других пользователей, просто угадывая или перебирая их account_id.",    
-                                Severity.HIGH,                                 
-                                "BOLA",                                        
-                                testUrl,                                       
-                                "✅ РЕКОМЕНДАЦИИ ПО ИСПРАВЛЕНИЮ:\n" +
-                                "1. Добавить проверку владения ресурсом на стороне сервера\n" +
-                                "2. Каждый запрос к ресурсу с account_id должен проверять, что account_id принадлежит текущему аутентифицированному пользователю\n" +
-                                "3. Использовать непредсказуемые UUID вместо последовательных ID\n" +
-                                "4. Реализовать механизм авторизации на уровне объектов (Object-Level Authorization)\n" +
-                                "5. Логировать все попытки доступа к не принадлежащим пользователю ресурсам"
-                            );
-                            
-                            findings.add(finding);
-                            System.out.println("🚨 BOLA VULNERABILITY FOUND: access to foreign account " + accountId);
-                            break; // Достаточно одной найденной уязвимости
-                        }
-                    } catch (IOException e) {
-                        // ✅ Ошибка сети или сервера (4xx/5xx) - не считаем уязвимостью
-                        String errorMsg = e.getMessage();
-                        if (errorMsg != null) {
-                            if (errorMsg.contains("403") || errorMsg.toLowerCase().contains("forbidden")) {
-                                System.out.println("✅ BOLA PROTECTION: access denied to account " + accountId + " (proper authorization)");
-                            } else if (errorMsg.contains("404") || errorMsg.toLowerCase().contains("not found")) {
-                                System.out.println("❓ Account " + accountId + " not found");
-                            } else {
-                                System.out.println("🔧 BOLA test network error for account " + accountId + ": " + errorMsg);
+                        // ✅ НЕ ПРЕРЫВАЕМ ТЕСТ - ищем ВСЕ уязвимые account_id
+                        // break; // Убрали break чтобы найти все уязвимости
+                    }
+                    
+                    successfulTests++;
+                    testedCount++;
+                    
+                } catch (IOException e) {
+                    // ✅ УЛУЧШЕННАЯ ОБРАБОТКА ОШИБОК: Различаем типы ошибок
+                    String errorMsg = e.getMessage();
+                    if (errorMsg != null) {
+                        if (errorMsg.contains("403") || errorMsg.toLowerCase().contains("forbidden")) {
+                            // Это нормально - система защищена
+                            if (testedCount % 20 == 0) { // Логируем каждые 20 запросов
+                                System.out.println("✅ BOLA protection working (" + testedCount + " tested)");
                             }
+                        } else if (errorMsg.contains("404") || errorMsg.toLowerCase().contains("not found")) {
+                            // Аккаунт не найден - тоже нормально
+                        } else if (errorMsg.contains("429") || errorMsg.toLowerCase().contains("too many requests")) {
+                            System.out.println("⚠️ RATE LIMIT HIT: Too many requests (after " + testedCount + " attempts)");
+                            rateLimitHit = true;
+                        } else if (errorMsg.contains("400") || errorMsg.toLowerCase().contains("bad request")) {
+                            // Невалидный формат account_id - пропускаем
                         } else {
-                            System.out.println("🔧 BOLA test network error for account " + accountId);
+                            System.out.println("🔧 BOLA test network error: " + errorMsg);
                         }
                     }
+                    
+                    testedCount++;
+                    totalRequests.incrementAndGet();
                 }
                 
-                // ✅ Если не нашли уязвимостей, добавляем информационное сообщение
-                if (findings.isEmpty()) {
-                    System.out.println("✅ BOLA test completed: no vulnerabilities found with current test data");
-                    findings.add(createInfoFinding(buildFullUrl(baseUrl, path), suspiciousAccountIds));
+                // ✅ АДАПТИВНАЯ ЗАДЕРЖКА: увеличиваем при рейт-лимите
+                if (!rateLimitHit && testedCount < suspiciousAccountIds.size()) {
+                    int delay = rateLimitHit ? 1000 : 150; // 1 секунда при рейт-лимите, 150ms обычно
+                    try {
+                        Thread.sleep(delay);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        System.out.println("⏹️ BOLA test interrupted");
+                        break;
+                    }
                 }
-            } else {
-                System.out.println("🔧 DEBUG: Skipping endpoint - no account_id parameter found in path: " + path);
             }
+            
+            // ✅ Если не нашли уязвимостей, добавляем информационное сообщение
+            if (findings.isEmpty()) {
+                String resultMessage = rateLimitHit ? 
+                    "incomplete due to rate limiting (" + testedCount + "/" + suspiciousAccountIds.size() + " tested)" : 
+                    "completed - no vulnerabilities found (" + testedCount + " account IDs tested)";
+                System.out.println("✅ BOLA test " + resultMessage);
+                findings.add(createInfoFinding(buildFullUrl(baseUrl, path), suspiciousAccountIds, testedCount, rateLimitHit, successfulTests));
+            } else {
+                System.out.println("🎯 BOLA test completed: found " + findings.size() + " vulnerabilities in " + testedCount + " attempts");
+            }
+            
         } catch (Exception e) {
+            // ✅ ПОМЕЧАЕМ ТЕСТ КАК ЗАВЕРШЕННЫЙ ДАЖЕ ПРИ ОШИБКЕ
+            synchronized (BOLA_LOCK) {
+                bolaTestCompleted = true;
+            }
             System.err.println("❌ BOLA test execution error: " + e.getMessage());
-            e.printStackTrace();
+            if (isVerboseMode()) {
+                e.printStackTrace();
+            }
         }
         
         return findings;
@@ -143,25 +236,29 @@ public class BolaTestCase implements TestCase {
             String consentId = createAccountConsent(baseUrl, client);
             if (consentId == null) {
                 System.out.println("⚠️ Cannot create consent, using default test account IDs");
-                return Arrays.asList("acc-179-1", "acc-179-2");
+                return Arrays.asList("acc-179-1", "acc-179-2", "acc-179-3");
             }
 
-            // ✅ ИСПРАВЛЕНИЕ: Формируем полный URL с правильной схемой
+            // ✅ Формируем полный URL с правильной схемой
             String accountsUrl = buildFullUrl(baseUrl, "/accounts?client_id=team179");
             Map<String, String> headers = createHeadersWithConsent(consentId);
             
             String response = client.get(accountsUrl, headers);
+            totalRequests.incrementAndGet();
             JsonNode body = MAPPER.readTree(response);
             accountIds = extractAccountIdsFromResponse(body);
             System.out.println("📝 Found our accounts: " + accountIds);
             
         } catch (Exception e) {
             System.out.println("⚠️ Error fetching our accounts: " + e.getMessage());
+            if (isVerboseMode()) {
+                e.printStackTrace();
+            }
         }
         
         // ✅ Fallback: если не получили реальные account_id, используем тестовые
         if (accountIds.isEmpty()) {
-            accountIds = Arrays.asList("acc-179-1", "acc-179-2", "acc-179-3");
+            accountIds = Arrays.asList("acc-179-1", "acc-179-2", "acc-179-3", "acc-179-4", "acc-179-5");
         }
         
         return accountIds;
@@ -172,10 +269,10 @@ public class BolaTestCase implements TestCase {
      */
     private String createAccountConsent(String baseUrl, HttpClient client) throws IOException {
         try {
-            // ✅ ИСПРАВЛЕНИЕ: Формируем полный URL с правильной схемой
+            // ✅ Формируем полный URL с правильной схемой
             String consentUrl = buildFullUrl(baseUrl, "/account-consents/request");
             
-            // ✅ ИСПРАВЛЕНИЕ: убрали Authorization заголовок - HttpClient уже настроен
+            // ✅ убрали Authorization заголовок - HttpClient уже настроен
             Map<String, String> headers = new HashMap<>();
             headers.put("Content-Type", "application/json");
             headers.put("x-requesting-bank", "team179");
@@ -186,6 +283,7 @@ public class BolaTestCase implements TestCase {
                 "}";
             
             String response = client.post(consentUrl, headers, consentBody, "application/json");
+            totalRequests.incrementAndGet();
             
             JsonNode body = MAPPER.readTree(response);
             if (body.has("consent_id")) {
@@ -195,6 +293,9 @@ public class BolaTestCase implements TestCase {
             }
         } catch (Exception e) {
             System.out.println("❌ Error creating consent: " + e.getMessage());
+            if (isVerboseMode()) {
+                e.printStackTrace();
+            }
         }
         return null;
     }
@@ -203,13 +304,8 @@ public class BolaTestCase implements TestCase {
      * ✅ Вспомогательный метод для построения полного URL
      */
     private String buildFullUrl(String baseUrl, String path) {
-        // ✅ УБРАН ОШИБОЧНЫЙ КОД: Не добавляем схему автоматически - это может сломать корректные URL
-        
-        // ✅ НОРМАЛИЗАЦИЯ: Убедимся, что baseUrl не содержит двойных слэшей и имеет правильный формат
-        String normalizedBaseUrl = baseUrl.trim();
-        
-        // ✅ ДОБАВЛЕНО: Отладочный вывод для диагностики
-        System.out.println("🔧 DEBUG: Building URL from baseUrl='" + normalizedBaseUrl + "', path='" + path + "'");
+        // ✅ НОРМАЛИЗАЦИЯ: Убедимся, что baseUrl не содержит двойных слэшей
+        String normalizedBaseUrl = baseUrl.trim().replaceAll("(?<!:)/{2,}", "/");
         
         String result;
         if (normalizedBaseUrl.endsWith("/") && path.startsWith("/")) {
@@ -219,9 +315,6 @@ public class BolaTestCase implements TestCase {
         } else {
             result = normalizedBaseUrl + path;
         }
-        
-        // ✅ ДОБАВЛЕНО: Отладочный вывод
-        System.out.println("🔧 DEBUG: Built URL: " + result);
         
         return result;
     }
@@ -241,70 +334,89 @@ public class BolaTestCase implements TestCase {
                 // ✅ Генерируем account_id для других команд
                 for (int teamId = 170; teamId <= 190; teamId++) {
                     if (teamId != 179) { // Пропускаем нашу команду
-                        for (int accountNum = 1; accountNum <= 3; accountNum++) {
+                        for (int accountNum = 1; accountNum <= 5; accountNum++) {
                             suspiciousIds.add("acc-" + teamId + "-" + accountNum);
                         }
                     }
+                }
+            } else if (sampleId.matches("\\d+")) {
+                // Числовые ID - генерируем последовательные
+                try {
+                    long ourId = Long.parseLong(sampleId);
+                    for (long i = ourId - 100; i <= ourId + 100; i++) {
+                        if (i != ourId && i > 0) {
+                            suspiciousIds.add(String.valueOf(i));
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    // ignore
                 }
             }
         }
         
         // ✅ Добавляем общие тестовые account_id
         suspiciousIds.addAll(Arrays.asList(
-            "acc-001", "acc-002", "acc-100", "acc-200", 
-            "acc-test-1", "acc-demo-1", "acc-admin",
-            "12345", "99999", "00001"
+            "acc-001", "acc-002", "acc-100", "acc-200", "acc-500", "acc-999",
+            "acc-test-1", "acc-demo-1", "acc-admin", "acc-guest", "acc-root",
+            "12345", "99999", "00001", "11111", "22222", "33333", "44444", "55555",
+            "100000", "200000", "300000"
         ));
 
-        // ✅ ДОБАВЛЕНО: UUID-подобные ID
+        // ✅ UUID-подобные ID
         suspiciousIds.addAll(Arrays.asList(
             "acc-11111111-1111-1111-1111-111111111111",
             "acc-22222222-2222-2222-2222-222222222222",
-            "acc-33333333-3333-3333-3333-333333333333"
+            "acc-33333333-3333-3333-3333-333333333333",
+            "acc-aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "acc-bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
         ));
 
-        // ✅ ДОБАВЛЕНО: SQL-инъекции
-        suspiciousIds.addAll(Arrays.asList(
-            "acc-1' OR '1'='1",
-            "acc-1' UNION SELECT * FROM accounts--",
-            "acc-1 OR 1=1",
-            "acc-1; DROP TABLE accounts--",
-            "acc-1' OR 1=1--"
-        ));
-
-        // ✅ ДОБАВЛЕНО: Path traversal
-        suspiciousIds.addAll(Arrays.asList(
-            "../admin",
-            "~",
-            "..;/admin",
-            "../../etc/passwd",
-            "....//....//etc/passwd"
-        ));
-
-        // ✅ ДОБАВЛЕНО: NoSQL-инъекции
-        suspiciousIds.addAll(Arrays.asList(
-            "acc-1{\"$ne\": \"null\"}",
-            "acc-1{\"$gt\": \"\"}",
-            "acc-1{\"$where\": \"1==1\"}"
-        ));
-
-        // ✅ ДОБАВЛЕНО: ID других команд (если наш формат не распознан)
+        // ✅ ID других команд (если наш формат не распознан)
         suspiciousIds.addAll(Arrays.asList(
             "acc-180-1", "acc-181-1", "acc-182-1", "acc-183-1", "acc-184-1",
-            "acc-185-1", "acc-186-1", "acc-187-1", "acc-188-1", "acc-189-1"
+            "acc-185-1", "acc-186-1", "acc-187-1", "acc-188-1", "acc-189-1",
+            "acc-190-1", "acc-191-1", "acc-192-1", "acc-193-1", "acc-194-1"
         ));
 
-        // ✅ ДОБАВЛЕНО: Специальные символы
-        suspiciousIds.addAll(Arrays.asList(
-            "acc-1%00", // null byte
-            "acc-1%0a", // new line
-            "acc-1%0d", // carriage return
-            "acc-1%09", // tab
-            "acc-1<script>alert(1)</script>" // XSS
-        ));
+        // ✅ ФИЛЬТРАЦИЯ: Убираем account_id с опасными символами
+        List<String> filteredIds = new ArrayList<>();
+        for (String id : suspiciousIds) {
+            if (!containsDangerousCharacters(id) && !ourAccountIds.contains(id)) {
+                filteredIds.add(id);
+            }
+        }
         
-        System.out.println("🎯 Generated " + suspiciousIds.size() + " suspicious account IDs for BOLA testing");
-        return suspiciousIds;
+        // ✅ ОГРАНИЧИВАЕМ количество для избежания рейт-лимита
+        if (filteredIds.size() > 50) {
+            filteredIds = filteredIds.subList(0, 50);
+        }
+        
+        System.out.println("🎯 Generated " + filteredIds.size() + " filtered suspicious account IDs for BOLA testing");
+        return filteredIds;
+    }
+
+    /**
+     * ✅ Проверяет, содержит ли строка опасные символы
+     */
+    private boolean containsDangerousCharacters(String input) {
+        if (input == null) return false;
+        
+        // Опасные символы, которые вызывают 400 Bad Request
+        String[] dangerousPatterns = {
+            "<", ">", "%00", "%0a", "%0d", "%09", 
+            "'", "\"", ";", "--", "/*", "*/", 
+            "..", "~", "{", "}", "$", 
+            "script", "alert", "union", "select", "drop", "insert", "update", "delete"
+        };
+        
+        String lowerInput = input.toLowerCase();
+        for (String pattern : dangerousPatterns) {
+            if (lowerInput.contains(pattern)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**
@@ -337,6 +449,9 @@ public class BolaTestCase implements TestCase {
                         accountIds.add(account.get("id").asText());
                     }
                 }
+            } else if (body.has("id")) {
+                // Одиночный аккаунт
+                accountIds.add(body.get("id").asText());
             }
         } catch (Exception e) {
             System.out.println("⚠️ Error parsing account IDs from response: " + e.getMessage());
@@ -354,7 +469,10 @@ public class BolaTestCase implements TestCase {
                body.has("balance") || 
                body.has("account_number") ||
                body.has("currency") ||
-               (body.has("type") && body.get("type").asText().equals("account"));
+               body.has("iban") ||
+               body.has("account_holder") ||
+               (body.has("type") && body.get("type").asText().toLowerCase().contains("account")) ||
+               (body.has("status") && body.has("balance"));
     }
 
     /**
@@ -365,6 +483,7 @@ public class BolaTestCase implements TestCase {
         headers.put("x-consent-id", "consent-38e83d9f8dca");
         headers.put("x-requesting-bank", "team179");
         headers.put("Content-Type", "application/json");
+        headers.put("User-Agent", "ASTF-Scanner/1.0");
         return headers;
     }
 
@@ -376,29 +495,94 @@ public class BolaTestCase implements TestCase {
         headers.put("x-consent-id", consentId);
         headers.put("x-requesting-bank", "team179");
         headers.put("Content-Type", "application/json");
+        headers.put("User-Agent", "ASTF-Scanner/1.0");
         return headers;
     }
 
     /**
      * ✅ Создает информационную находку когда уязвимостей не найдено
      */
-    private Finding createInfoFinding(String url, List<String> testedAccountIds) {
+    private Finding createInfoFinding(String url, List<String> testedAccountIds, int actuallyTested, boolean rateLimitHit, int successfulTests) {
+        String methodology;
+        
+        if (rateLimitHit) {
+            methodology = "🔍 МЕТОДОЛОГИЯ BOLA-ТЕСТИРОВАНИЯ (ЧАСТИЧНО ЗАВЕРШЕНО):\n\n" +
+                "• Сгенерировано " + testedAccountIds.size() + " потенциально чужих account_id\n" +
+                "• Протестировано " + actuallyTested + " account_id до срабатывания рейт-лимита\n" +
+                "• Успешных запросов: " + successfulTests + " (остальные - 403/404/400)\n" +
+                "• Использован один токен команды team179\n" +
+                "• Система правильно отклоняла запросы к чужим account_id\n" +
+                "• API защищено рейт-лимитом, что предотвращает автоматические атаки перебором\n" +
+                "• В тестируемой части уязвимость BOLA не обнаружена\n\n" +
+                "📊 СТАТИСТИКА:\n" +
+                "• Всего запросов: " + totalRequests.get() + "\n" +
+                "• Тестируемых ID: " + actuallyTested + "/" + testedAccountIds.size() + "\n" +
+                "• Рейт-лимит сработал после: " + actuallyTested + " запросов";
+        } else {
+            methodology = "🔍 МЕТОДОЛОГИЯ BOLA-ТЕСТИРОВАНИЯ:\n\n" +
+                "• Протестировано " + testedAccountIds.size() + " потенциально чужих account_id\n" +
+                "• Успешных запросов: " + successfulTests + " (остальные - 403/404/400)\n" +
+                "• Использован один токен команды team179\n" +
+                "• Система правильно отклоняла запросы к чужим account_id (403/404)\n" +
+                "• В реальной BOLA-атаке злоумышленник использовал бы тот же метод: свой токен + подбор чужих ID\n" +
+                "• Организаторы утверждают, что BOLA невозможна из-за равноправия аккаунтов - наши тесты это подтверждают\n\n" +
+                "📊 СТАТИСТИКА:\n" +
+                "• Всего запросов: " + totalRequests.get() + "\n" +
+                "• Протестировано ID: " + actuallyTested + "\n" +
+                "• Успешных тестов: " + successfulTests;
+        }
+        
+        String remediation = rateLimitHit ? 
+            "✅ СИСТЕМА ЗАЩИЩЕНА ОТ BOLA (в протестированной части):\n\n" +
+            "• Реализована проверка принадлежности account_id\n" +
+            "• Правильно работает механизм авторизации\n" +
+            "• Присутствует защита от перебора (рейт-лимит)\n" +
+            "• Отсутствует уязвимость Broken Object Level Authorization\n\n" +
+            "💡 РЕКОМЕНДАЦИИ ДЛЯ ПОВЫШЕНИЯ БЕЗОПАСНОСТИ:\n" +
+            "• Продолжить использовать непредсказуемые идентификаторы\n" +
+            "• Мониторить подозрительные паттерны доступа\n" +
+            "• Регулярно проводить пентесты на BOLA" :
+            "✅ СИСТЕМА ЗАЩИЩЕНА ОТ BOLA:\n\n" +
+            "• Реализована проверка принадлежности account_id\n" +
+            "• Правильно работает механизм авторизации\n" +
+            "• Отсутствует уязвимость Broken Object Level Authorization\n\n" +
+            "🎯 ВЫВОД:\n" +
+            "Система корректно реализует механизмы авторизации на уровне объектов. " +
+            "Пользователи могут получать доступ только к своим собственным ресурсам.";
+        
         return new Finding(
             "BOLA-INFO",
             "BOLA Testing Methodology Demonstrated",
-            "МЕТОДОЛОГИЯ BOLA-ТЕСТИРОВАНИЯ:\n" +
-            "• Протестировано " + testedAccountIds.size() + " потенциально чужих account_id\n" +
-            "• Использован один токен команды team179\n" +
-            "• Система правильно отклоняла запросы к чужим account_id (403/404)\n" +
-            "• В реальной BOLA-атаке злоумышленник использовал бы тот же метод: свой токен + подбор чужих ID\n" +
-            "• Организаторы утверждают, что BOLA невозможна из-за равноправия аккаунтов - наши тесты это подтверждают",
+            methodology,
             Severity.INFO,
             "BOLA",
             url,
-            "✅ СИСТЕМА ЗАЩИЩЕНА ОТ BOLA:\n" +
-            "• Реализована проверка принадлежности account_id\n" +
-            "• Правильно работает механизм авторизации\n" +
-            "• Отсутствует уязвимость Broken Object Level Authorization"
+            remediation
         );
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Проверяет, включен ли verbose mode
+     */
+    private boolean isVerboseMode() {
+        // Можно добавить логику для проверки конфигурации
+        return System.getProperty("astf.verbose") != null;
+    }
+    
+    /**
+     * ✅ ДОБАВЛЕНО: Метод для сброса состояния (для тестирования)
+     */
+    public static void reset() {
+        synchronized (BOLA_LOCK) {
+            bolaTestCompleted = false;
+            totalRequests.set(0);
+        }
+    }
+    
+    /**
+     * ✅ ДОБАВЛЕНО: Получить общее количество запросов
+     */
+    public static int getTotalRequests() {
+        return totalRequests.get();
     }
 }

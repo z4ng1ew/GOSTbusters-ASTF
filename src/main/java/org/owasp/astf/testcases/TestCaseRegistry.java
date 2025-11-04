@@ -25,9 +25,19 @@ public class TestCaseRegistry {
      * Registers all default test cases.
      */
     private void registerDefaultTestCases() {
-        // OWASP API Security Top 10
+        // OWASP API Security Top 10 - ALL test cases
         register(new BrokenAuthenticationTestCase());
-        register(new BolaTestCase()); // ← добавлено
+        register(new BolaTestCase());
+        register(new ExcessiveDataExposureTestCase());
+        register(new InjectionTestCase());
+        register(new RateLimitBypassTestCase());
+        register(new IdorTestCase());
+        register(new InsecureDeserializationTestCase());
+        register(new MassAssignmentTestCase());
+        // register(new SecurityMisconfigurationTestCase());
+        // register(new ImproperAssetsManagementTestCase());
+        
+        logger.info("Registered {} test cases", availableTestCases.size());
     }
 
     /**
