@@ -139,6 +139,28 @@ java -jar target\api-security-testing-framework-1.0-SNAPSHOT.jar scan --target h
 java -jar target\api-security-testing-framework-1.0-SNAPSHOT.jar scan --target https://vbank.open.bankingapi.ru --auth-header "Authorization: Bearer JJqqH33ePjnfCMlyHFfz7Px09SMWvzhO" --openapi "C:\Users\user\Desktop\www-project-api-security-testing-framework-main\vbank-openapi.yaml" --output-file scan_results.json
 
 
+- 03.11.2025 - 17:58
+
+java -jar target\api-security-testing-framework-1.0-SNAPSHOT.jar scan --target https://vbank.open.bankingapi.ru --auth-header "Authorization: Bearer JJqqH33ePjnfCMlyHFfz7Px09SMWvzhO" --openapi vbank-openapi.yaml --output-file scan_results.json
+
+
+- резкльтат лучше
+
+
+java -jar target\api-security-testing-framework-1.0-SNAPSHOT.jar scan --target https://vbank.open.bankingapi.ru --auth-header "Authorization: Bearer JJqqH33ePjnfCMlyHFfz7Px09SMWvzhO" --openapi vbank-openapi.json --output-file scan_results.json
+
+-  последний, на json
+
+
+
+java -jar target\api-security-testing-framework-1.0-SNAPSHOT.jar scan --target https://vbank.open.bankingapi.ru --auth-header "Authorization: Bearer JJqqH33ePjnfCMlyHFfz7Px09SMWvzhO" --openapi vbank-openapi.yaml --verbose
+
+
+
+
+
+
+
 
 
 

@@ -40,6 +40,11 @@ public class BolaTestCase implements TestCase {
             String baseUrl = endpoint.getBaseUrl();
             String path = endpoint.getPath();
             
+            // ✅ ДОБАВЛЕНО: Отладочный вывод для диагностики
+            System.out.println("🔧 DEBUG: Starting BOLA test");
+            System.out.println("🔧 DEBUG: baseUrl = '" + baseUrl + "'");
+            System.out.println("🔧 DEBUG: path = '" + path + "'");
+            
             // ✅ Ищем эндпоинты с параметрами account_id
             if (path.contains("{account_id}") || path.contains("account_id")) {
                 
@@ -113,6 +118,8 @@ public class BolaTestCase implements TestCase {
                     System.out.println("✅ BOLA test completed: no vulnerabilities found with current test data");
                     findings.add(createInfoFinding(buildFullUrl(baseUrl, path), suspiciousAccountIds));
                 }
+            } else {
+                System.out.println("🔧 DEBUG: Skipping endpoint - no account_id parameter found in path: " + path);
             }
         } catch (Exception e) {
             System.err.println("❌ BOLA test execution error: " + e.getMessage());
@@ -196,14 +203,27 @@ public class BolaTestCase implements TestCase {
      * ✅ Вспомогательный метод для построения полного URL
      */
     private String buildFullUrl(String baseUrl, String path) {
-        // ✅ Убедимся, что baseUrl заканчивается на '/', а path не начинается с '/'
-        if (baseUrl.endsWith("/") && path.startsWith("/")) {
-            return baseUrl + path.substring(1);
-        } else if (!baseUrl.endsWith("/") && !path.startsWith("/")) {
-            return baseUrl + "/" + path;
+        // ✅ УБРАН ОШИБОЧНЫЙ КОД: Не добавляем схему автоматически - это может сломать корректные URL
+        
+        // ✅ НОРМАЛИЗАЦИЯ: Убедимся, что baseUrl не содержит двойных слэшей и имеет правильный формат
+        String normalizedBaseUrl = baseUrl.trim();
+        
+        // ✅ ДОБАВЛЕНО: Отладочный вывод для диагностики
+        System.out.println("🔧 DEBUG: Building URL from baseUrl='" + normalizedBaseUrl + "', path='" + path + "'");
+        
+        String result;
+        if (normalizedBaseUrl.endsWith("/") && path.startsWith("/")) {
+            result = normalizedBaseUrl + path.substring(1);
+        } else if (!normalizedBaseUrl.endsWith("/") && !path.startsWith("/")) {
+            result = normalizedBaseUrl + "/" + path;
         } else {
-            return baseUrl + path;
+            result = normalizedBaseUrl + path;
         }
+        
+        // ✅ ДОБАВЛЕНО: Отладочный вывод
+        System.out.println("🔧 DEBUG: Built URL: " + result);
+        
+        return result;
     }
 
     /**
@@ -234,6 +254,53 @@ public class BolaTestCase implements TestCase {
             "acc-001", "acc-002", "acc-100", "acc-200", 
             "acc-test-1", "acc-demo-1", "acc-admin",
             "12345", "99999", "00001"
+        ));
+
+        // ✅ ДОБАВЛЕНО: UUID-подобные ID
+        suspiciousIds.addAll(Arrays.asList(
+            "acc-11111111-1111-1111-1111-111111111111",
+            "acc-22222222-2222-2222-2222-222222222222",
+            "acc-33333333-3333-3333-3333-333333333333"
+        ));
+
+        // ✅ ДОБАВЛЕНО: SQL-инъекции
+        suspiciousIds.addAll(Arrays.asList(
+            "acc-1' OR '1'='1",
+            "acc-1' UNION SELECT * FROM accounts--",
+            "acc-1 OR 1=1",
+            "acc-1; DROP TABLE accounts--",
+            "acc-1' OR 1=1--"
+        ));
+
+        // ✅ ДОБАВЛЕНО: Path traversal
+        suspiciousIds.addAll(Arrays.asList(
+            "../admin",
+            "~",
+            "..;/admin",
+            "../../etc/passwd",
+            "....//....//etc/passwd"
+        ));
+
+        // ✅ ДОБАВЛЕНО: NoSQL-инъекции
+        suspiciousIds.addAll(Arrays.asList(
+            "acc-1{\"$ne\": \"null\"}",
+            "acc-1{\"$gt\": \"\"}",
+            "acc-1{\"$where\": \"1==1\"}"
+        ));
+
+        // ✅ ДОБАВЛЕНО: ID других команд (если наш формат не распознан)
+        suspiciousIds.addAll(Arrays.asList(
+            "acc-180-1", "acc-181-1", "acc-182-1", "acc-183-1", "acc-184-1",
+            "acc-185-1", "acc-186-1", "acc-187-1", "acc-188-1", "acc-189-1"
+        ));
+
+        // ✅ ДОБАВЛЕНО: Специальные символы
+        suspiciousIds.addAll(Arrays.asList(
+            "acc-1%00", // null byte
+            "acc-1%0a", // new line
+            "acc-1%0d", // carriage return
+            "acc-1%09", // tab
+            "acc-1<script>alert(1)</script>" // XSS
         ));
         
         System.out.println("🎯 Generated " + suspiciousIds.size() + " suspicious account IDs for BOLA testing");

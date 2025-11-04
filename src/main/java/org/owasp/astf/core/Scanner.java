@@ -318,6 +318,27 @@ public class Scanner {
             logger.info("Using {} provided endpoints", endpoints.size());
         }
 
+        // ✅ ИСПРАВЛЕНИЕ: Проверяем и исправляем baseUrl, если он некорректный
+        List<EndpointInfo> fixedEndpoints = new ArrayList<>();
+        String targetUrl = config.getTargetUrl();
+        for (EndpointInfo ep : endpoints) {
+            if ("/".equals(ep.getBaseUrl()) || ep.getBaseUrl() == null || ep.getBaseUrl().startsWith("/")) {
+                // Заменяем '/' на targetUrl из конфига
+                fixedEndpoints.add(new EndpointInfo(
+                    targetUrl,
+                    ep.getPath(),
+                    ep.getMethod(),
+                    ep.getContentType(),
+                    ep.getRequestBody(),
+                    ep.isRequiresAuthentication()
+                ));
+                System.out.println("🔧 DEBUG: Fixed baseUrl for endpoint: " + ep.getMethod() + " " + ep.getPath() + " -> " + targetUrl);
+            } else {
+                fixedEndpoints.add(ep);
+            }
+        }
+        endpoints = fixedEndpoints;
+
         return endpoints;
     }
 

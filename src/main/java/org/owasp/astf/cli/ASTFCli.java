@@ -32,6 +32,9 @@ public class ASTFCli {
             System.out.println("🔗 Target: " + config.getTargetUrl());
             if (config.getOpenApiSpecPath() != null) {
                 System.out.println("📄 OpenAPI: " + config.getOpenApiSpecPath());
+                // ✅ ДОБАВЛЕНО: Определяем формат OpenAPI файла
+                String openApiFormat = getOpenApiFormat(config.getOpenApiSpecPath());
+                System.out.println("📋 OpenAPI Format: " + openApiFormat);
             }
             if (config.isUseGost()) {
                 System.out.println("🌐 GOST Gateway: Enabled");
@@ -79,8 +82,15 @@ public class ASTFCli {
                     break;
                 case "--openapi":
                     if (i + 1 < args.length) {
-                        config.setOpenApiSpecPath(args[++i]);
-                        System.out.println("✅ Set OpenAPI spec: " + config.getOpenApiSpecPath());
+                        String openApiFile = args[++i];
+                        // ✅ ИСПРАВЛЕНИЕ: Проверяем существование файла и его формат
+                        if (isValidOpenApiFile(openApiFile)) {
+                            config.setOpenApiSpecPath(openApiFile);
+                            System.out.println("✅ Set OpenAPI spec: " + config.getOpenApiSpecPath());
+                        } else {
+                            System.err.println("❌ Invalid OpenAPI file: " + openApiFile + 
+                                " (must be .yaml, .yml, or .json and exist)");
+                        }
                     }
                     break;
                 case "--use-gost":
@@ -141,6 +151,58 @@ public class ASTFCli {
         }
 
         return config;
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Проверяет валидность OpenAPI файла
+     */
+    private static boolean isValidOpenApiFile(String filePath) {
+        if (filePath == null || filePath.trim().isEmpty()) {
+            return false;
+        }
+        
+        // Проверяем расширение файла
+        String lowerCasePath = filePath.toLowerCase();
+        boolean validExtension = lowerCasePath.endsWith(".yaml") || 
+                                lowerCasePath.endsWith(".yml") || 
+                                lowerCasePath.endsWith(".json");
+        
+        if (!validExtension) {
+            System.err.println("❌ Invalid file extension. Supported: .yaml, .yml, .json");
+            return false;
+        }
+        
+        // Проверяем существование файла
+        java.io.File file = new java.io.File(filePath);
+        if (!file.exists()) {
+            System.err.println("❌ OpenAPI file not found: " + filePath);
+            System.err.println("💡 Current directory: " + System.getProperty("user.dir"));
+            return false;
+        }
+        
+        // Проверяем, что файл не пустой
+        if (file.length() == 0) {
+            System.err.println("❌ OpenAPI file is empty: " + filePath);
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Определяет формат OpenAPI файла
+     */
+    private static String getOpenApiFormat(String filePath) {
+        if (filePath == null) return "Unknown";
+        
+        String lowerCasePath = filePath.toLowerCase();
+        if (lowerCasePath.endsWith(".json")) {
+            return "JSON";
+        } else if (lowerCasePath.endsWith(".yaml") || lowerCasePath.endsWith(".yml")) {
+            return "YAML";
+        } else {
+            return "Unknown (will try to auto-detect)";
+        }
     }
 
     /**
@@ -266,7 +328,7 @@ public class ASTFCli {
         System.out.println();
         System.out.println("Options:");
         System.out.println("  --auth-header <header>      Authentication header (e.g., \"Authorization: Bearer token\")");
-        System.out.println("  --openapi <file>            Load endpoints from OpenAPI specification");
+        System.out.println("  --openapi <file>            Load endpoints from OpenAPI specification (YAML or JSON)");
         System.out.println("  --use-gost                  Use GOST gateway for vbank.open.bankingapi.ru");
         System.out.println("  --output-file <file>        Output file for results (default: scan_results.json)");
         System.out.println("  --output-format <format>    Output format: json, html (default: json)");
@@ -280,5 +342,8 @@ public class ASTFCli {
         System.out.println();
         System.out.println("  java -jar astf.jar scan --target https://vbank.open.bankingapi.ru \\");
         System.out.println("    --use-gost --output-file my_scan.json --threads 5");
+        System.out.println();
+        System.out.println("  java -jar astf.jar scan --target https://vbank.open.bankingapi.ru \\");
+        System.out.println("    --auth-header \"Authorization: Bearer token\" --openapi spec.json --output-file results.json");
     }
 }
