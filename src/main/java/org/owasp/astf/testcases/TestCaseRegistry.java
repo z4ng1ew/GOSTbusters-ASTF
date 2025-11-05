@@ -7,8 +7,6 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.owasp.astf.core.config.ScanConfig;
-// import org.owasp.astf.plugins.PluginLoader;  // ❌ ВРЕМЕННО ЗАКОММЕНТИРОВАТЬ
-// import org.owasp.astf.plugins.Plugin;        // ❌ ВРЕМЕННО ЗАКОММЕНТИРОВАТЬ
 
 /**
  * Registry for all available test cases with plugin support.
@@ -18,10 +16,10 @@ public class TestCaseRegistry {
 
     private final List<TestCase> availableTestCases;
 
-    public TestCaseRegistry(ScanConfig config) {
+    // ✅ ИСПРАВЛЕНО: Конструктор без параметров
+    public TestCaseRegistry() {
         this.availableTestCases = new ArrayList<>();
         registerDefaultTestCases();
-        // registerPluginTestCases(config); // ❌ ВРЕМЕННО ЗАКОММЕНТИРОВАТЬ
     }
 
     /**
@@ -37,8 +35,8 @@ public class TestCaseRegistry {
         register(new IdorTestCase());
         register(new InsecureDeserializationTestCase());
         register(new MassAssignmentTestCase());
-        register(new SecurityMisconfigurationTestCase());
-        register(new ImproperAssetsManagementTestCase());
+        // register(new SecurityMisconfigurationTestCase());
+        // register(new ImproperAssetsManagementTestCase());
         
         // ✅ ДОБАВЛЕНО: Новые специализированные тест-кейсы
         register(new FunctionLevelAuthTestCase());
@@ -49,35 +47,6 @@ public class TestCaseRegistry {
         
         logger.info("✅ Registered {} built-in test cases", availableTestCases.size());
     }
-
-    /**
-     * ❌ ВРЕМЕННО ЗАКОММЕНТИРОВАТЬ: Загружает и регистрирует плагины
-     */
-    /*
-    private void registerPluginTestCases(ScanConfig config) {
-        PluginLoader pluginLoader = new PluginLoader();
-        List<Plugin> plugins = pluginLoader.loadPlugins(config);
-        
-        logger.info("🔌 Found {} plugins", plugins.size());
-        
-        int registeredPlugins = 0;
-        for (Plugin plugin : plugins) {
-            try {
-                // Преобразуем Plugin в TestCase через адаптер
-                TestCase pluginTestCase = new PluginAsTestCaseAdapter(plugin);
-                register(pluginTestCase);
-                registeredPlugins++;
-                logger.info("✅ Registered plugin: {} - {}", plugin.getId(), plugin.getName());
-            } catch (Exception e) {
-                logger.error("❌ Failed to register plugin {}: {}", plugin.getId(), e.getMessage());
-            }
-        }
-        
-        if (registeredPlugins > 0) {
-            logger.info("🎯 Successfully registered {} plugins", registeredPlugins);
-        }
-    }
-    */
 
     /**
      * Registers a test case.

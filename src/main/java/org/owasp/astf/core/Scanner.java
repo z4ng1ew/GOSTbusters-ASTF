@@ -61,6 +61,8 @@ public class Scanner {
         
         this.config = effectiveConfig;
         this.httpClient = new HttpClient(effectiveConfig);
+        
+        // ✅ ИСПРАВЛЕНО: Инициализируем поле с вызовом конструктора без параметров
         this.testCaseRegistry = new TestCaseRegistry();
         this.discoveryService = new EndpointDiscoveryService(effectiveConfig, httpClient);
 
@@ -168,7 +170,6 @@ public class Scanner {
                         CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                             try {
                                 logger.debug("Executing {} on {}", testCase.getId(), endpoint);
-                                // ✅ Исправлено: убран параметр config
                                 List<Finding> testFindings = testCase.execute(endpoint, httpClient);
 
                                 if (!testFindings.isEmpty()) {
@@ -253,7 +254,6 @@ public class Scanner {
         for (Finding finding : findings) {
             String severityPrefix = getSeverityPrefix(finding.getSeverity());
             
-            // ✅ ИСПРАВЛЕНИЕ: getName() -> getTitle(), getAffectedResource() -> getEndpoint()
             System.out.println(severityPrefix + " [" + finding.getId() + "] " + 
                              finding.getTitle() + ": " + 
                              finding.getDescription().split("\n")[0]);
@@ -295,7 +295,6 @@ public class Scanner {
             try {
                 logger.info("Loading endpoints from OpenAPI spec: {}", config.getOpenApiSpecPath());
                 var openAPI = OpenApiLoader.load(config.getOpenApiSpecPath());
-                // ✅ Исправлено: убран второй параметр
                 endpoints.addAll(OpenApiLoader.getEndpoints(openAPI));
                 logger.info("Discovered {} endpoints from OpenAPI", endpoints.size());
             } catch (Exception e) {
@@ -323,7 +322,7 @@ public class Scanner {
         String targetUrl = config.getTargetUrl();
         for (EndpointInfo ep : endpoints) {
             if ("/".equals(ep.getBaseUrl()) || ep.getBaseUrl() == null || ep.getBaseUrl().startsWith("/")) {
-                // Заменяем '/' на targetUrl из конфига
+                // Заменяем некорректный baseUrl на targetUrl из конфига
                 fixedEndpoints.add(new EndpointInfo(
                     targetUrl,
                     ep.getPath(),
