@@ -1,5 +1,6 @@
 package org.owasp.astf.core;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,6 +50,10 @@ public class Scanner {
     private final Map<Severity, AtomicInteger> findingsBySeverity = new ConcurrentHashMap<>();
     private LocalDateTime scanStartTime;
     private LocalDateTime scanEndTime;
+
+    // ✅ ДОБАВЛЕНО: Статистика фильтрации
+    private final AtomicInteger falsePositivesFiltered = new AtomicInteger(0);
+    private final AtomicInteger totalFindingsBeforeFiltering = new AtomicInteger(0);
 
     /**
      * Creates a new scanner with the specified configuration.
@@ -171,19 +176,23 @@ public class Scanner {
                             try {
                                 logger.debug("Executing {} on {}", testCase.getId(), endpoint);
                                 List<Finding> testFindings = testCase.execute(endpoint, httpClient);
+                                
+                                // ✅ ДОБАВЛЕНО: Фильтрация ложных срабатываний
+                                List<Finding> filteredFindings = filterFalsePositives(testFindings, endpoint, httpClient);
+                                totalFindingsBeforeFiltering.addAndGet(testFindings.size());
 
-                                if (!testFindings.isEmpty()) {
+                                if (!filteredFindings.isEmpty()) {
                                     synchronized (findings) {
-                                        findings.addAll(testFindings);
+                                        findings.addAll(filteredFindings);
 
                                         // Update severity counters
-                                        for (Finding finding : testFindings) {
+                                        for (Finding finding : filteredFindings) {
                                             findingsBySeverity.get(finding.getSeverity()).incrementAndGet();
                                         }
                                     }
 
-                                    logger.debug("Found {} issues with {} on {}",
-                                            testFindings.size(), testCase.getId(), endpoint);
+                                    logger.debug("Found {} issues with {} on {} (after filtering)",
+                                            filteredFindings.size(), testCase.getId(), endpoint);
                                 }
                             } catch (Exception e) {
                                 logger.error("Error executing test case {} on endpoint {}: {}",
@@ -238,7 +247,184 @@ public class Scanner {
         result.setScanStartTime(scanStartTime);
         result.setScanEndTime(scanEndTime);
 
+        // ✅ ДОБАВЛЕНО: Вывод статистики в консоль при завершении
+        printScanSummary(findings);
+
         return result;
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Фильтрует ложные срабатывания
+     */
+    private List<Finding> filterFalsePositives(List<Finding> findings, EndpointInfo endpoint, HttpClient client) {
+        List<Finding> filtered = new ArrayList<>();
+        
+        for (Finding finding : findings) {
+            if ("ASTF-API2-2023".equals(finding.getTestCaseId())) {
+                // ✅ Проверить, что эндпоинт действительно не требует аутентификации
+                if (isActuallyUnauthenticated(endpoint, client)) {
+                    filtered.add(finding);
+                } else {
+                    if (config.isVerbose()) {
+                        System.out.println("❌ FP Filtered: " + finding.getTitle() + " - " + finding.getEndpoint());
+                    }
+                    falsePositivesFiltered.incrementAndGet();
+                }
+            } else {
+                filtered.add(finding);
+            }
+        }
+        return filtered;
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Проверяет, можно ли получить доступ без токена
+     */
+    private boolean isActuallyUnauthenticated(EndpointInfo endpoint, HttpClient client) {
+        try {
+            // Создаем копию клиента без заголовков аутентификации
+            HttpClient noAuthClient = createUnauthenticatedClient();
+            
+            String response = noAuthClient.get(endpoint.getFullUrl(), Map.of()); // без токена
+            int code = extractStatusCode(response);
+            
+            // ✅ Если 200 без токена — действительно уязвим
+            boolean isVulnerable = code == 200;
+            
+            if (config.isVerbose()) {
+                System.out.println("🔍 Auth Check: " + endpoint.getMethod() + " " + endpoint.getFullUrl() + 
+                                 " -> Status: " + code + ", Vulnerable: " + isVulnerable);
+            }
+            
+            return isVulnerable;
+        } catch (Exception e) {
+            // ✅ Если ошибка — значит, аутентификация есть (ложное срабатывание)
+            if (config.isVerbose()) {
+                System.out.println("🔍 Auth Check: " + endpoint.getMethod() + " " + endpoint.getFullUrl() + 
+                                 " -> Error: " + e.getMessage() + " (protected)");
+            }
+            return false;
+        }
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Создает HttpClient без заголовков аутентификации
+     */
+    private HttpClient createUnauthenticatedClient() {
+        ScanConfig noAuthConfig = new ScanConfig();
+        noAuthConfig.setTargetUrl(config.getTargetUrl());
+        noAuthConfig.setHeaders(new HashMap<>()); // Пустые заголовки
+        noAuthConfig.setTimeoutMinutes(config.getTimeoutMinutes());
+        noAuthConfig.setMaxRequestsPerSecond(config.getMaxRequestsPerSecond());
+        noAuthConfig.setFollowRedirects(config.isFollowRedirects());
+        noAuthConfig.setProxyHost(config.getProxyHost());
+        noAuthConfig.setProxyPort(config.getProxyPort());
+        
+        return new HttpClient(noAuthConfig);
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Извлекает статус код из ответа
+     */
+    private int extractStatusCode(String response) {
+        if (response == null || response.trim().isEmpty()) {
+            return 500; // Assume error for null/empty responses
+        }
+        
+        // ✅ Эвристики для определения статус кода
+        boolean isSuccess = true;
+        
+        // Проверяем признаки ошибок аутентификации
+        if (response.toLowerCase().contains("unauthorized") || 
+            response.toLowerCase().contains("authentication") ||
+            response.toLowerCase().contains("401") ||
+            response.toLowerCase().contains("403") ||
+            response.toLowerCase().contains("access denied") ||
+            response.toLowerCase().contains("forbidden")) {
+            return 401; // Authentication error
+        }
+        
+        // Проверяем признаки успешного ответа
+        if (response.trim().startsWith("{") && response.trim().endsWith("}")) {
+            // JSON response
+            if (response.toLowerCase().contains("\"status\":\"success\"") ||
+                response.toLowerCase().contains("\"success\":true") ||
+                response.toLowerCase().contains("\"data\":") ||
+                (response.length() > 50 && !response.toLowerCase().contains("\"error\""))) {
+                return 200; // Success
+            }
+        }
+        
+        // Проверяем HTML ошибки
+        if (response.toLowerCase().contains("<title>401") ||
+            response.toLowerCase().contains("<title>403") ||
+            response.toLowerCase().contains("<title>error")) {
+            return 401; // Authentication error
+        }
+        
+        // Если ответ содержит данные и не содержит ошибок - считаем успешным
+        if (response.length() > 20 && 
+            !response.toLowerCase().contains("error") &&
+            !response.toLowerCase().contains("unauthorized")) {
+            return 200; // Success
+        }
+        
+        return 500; // Unknown/error
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Вывод статистики сканирования в консоль
+     */
+    private void printScanSummary(List<Finding> findings) {
+        // ✅ Подсчет по уровням серьезности
+        int criticalCount = findings.stream().mapToInt(f -> f.getSeverity() == Severity.CRITICAL ? 1 : 0).sum();
+        int highCount = findings.stream().mapToInt(f -> f.getSeverity() == Severity.HIGH ? 1 : 0).sum();
+        int mediumCount = findings.stream().mapToInt(f -> f.getSeverity() == Severity.MEDIUM ? 1 : 0).sum();
+        int lowCount = findings.stream().mapToInt(f -> f.getSeverity() == Severity.LOW ? 1 : 0).sum();
+        int infoCount = findings.stream().mapToInt(f -> f.getSeverity() == Severity.INFO ? 1 : 0).sum();
+
+        // ✅ Вычисление длительности сканирования
+        long durationSeconds = Duration.between(scanStartTime, scanEndTime).getSeconds();
+        long minutes = durationSeconds / 60;
+        long seconds = durationSeconds % 60;
+
+        System.out.println("\n🎯 SCAN SUMMARY:");
+        System.out.println("┌─────────────────────────────────────────────┐");
+        System.out.println("│ • Total findings: " + String.format("%-25s", findings.size()) + "│");
+        System.out.println("│ • Critical severity: " + String.format("%-21s", criticalCount) + "│");
+        System.out.println("│ • High severity: " + String.format("%-25s", highCount) + "│");
+        System.out.println("│ • Medium severity: " + String.format("%-23s", mediumCount) + "│");
+        System.out.println("│ • Low severity: " + String.format("%-27s", lowCount) + "│");
+        System.out.println("│ • Info findings: " + String.format("%-25s", infoCount) + "│");
+        
+        // ✅ ДОБАВЛЕНО: Статистика фильтрации
+        if (falsePositivesFiltered.get() > 0) {
+            System.out.println("│ • False positives filtered: " + String.format("%-15s", falsePositivesFiltered.get()) + "│");
+        }
+        
+        if (minutes > 0) {
+            System.out.println("│ • Scan duration: " + String.format("%-24s", minutes + "m " + seconds + "s") + "│");
+        } else {
+            System.out.println("│ • Scan duration: " + String.format("%-24s", seconds + " seconds") + "│");
+        }
+        
+        String outputFile = config.getOutputFile() != null ? config.getOutputFile() : "scan_results.json";
+        System.out.println("│ • Report saved to: " + String.format("%-21s", outputFile) + "│");
+        System.out.println("└─────────────────────────────────────────────┘");
+
+        // ✅ Дополнительная информация в зависимости от результатов
+        if (findings.isEmpty()) {
+            System.out.println("✅ Excellent! No security vulnerabilities detected.");
+        } else if (criticalCount + highCount > 0) {
+            System.out.println("🚨 ATTENTION: Critical or High severity vulnerabilities found!");
+        } else {
+            System.out.println("⚠️  Review medium and low severity findings for potential improvements.");
+        }
+
+        // ✅ ДОБАВЛЕНО: Информация о фильтрации
+        if (falsePositivesFiltered.get() > 0) {
+            System.out.println("🔍 Note: " + falsePositivesFiltered.get() + " false positives were filtered for accuracy");
+        }
     }
 
     /**

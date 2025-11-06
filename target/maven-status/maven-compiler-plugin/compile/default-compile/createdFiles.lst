@@ -53,6 +53,7 @@ org\owasp\astf\reporting\SarifReportGenerator$1.class
 org\owasp\astf\testcases\BrokenAuthenticationTestCase.class
 org\owasp\astf\reporting\ReportGenerator.class
 org\owasp\astf\testcases\InjectionTestCase.class
+org\owasp\astf\testcases\validation\AuthenticationValidator.class
 org\owasp\astf\core\http\HttpClient$HttpResponseCallback.class
 org\owasp\astf\testcases\bola\service\ConsentService.class
 org\owasp\astf\integrations\detection\CIEnvironmentDetector.class

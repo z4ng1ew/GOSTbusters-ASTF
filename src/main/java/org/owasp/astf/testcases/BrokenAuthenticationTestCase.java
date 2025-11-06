@@ -2,6 +2,7 @@ package org.owasp.astf.testcases;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -56,16 +57,27 @@ public class BrokenAuthenticationTestCase implements TestCase {
         logger.info("Executing {} test on {}", getId(), endpoint);
         List<Finding> findings = new ArrayList<>();
 
-        // Only test authentication endpoints
-        if (isAuthEndpoint(endpoint)) {
-            // Test for weak authentication mechanisms
-            findings.addAll(testWeakAuthentication(endpoint, httpClient));
-        } else {
-            // For all other endpoints, test if they require authentication
-            findings.addAll(testMissingAuthentication(endpoint, httpClient));
+        // ✅ УПРОЩЕННАЯ ЛОГИКА: Единый подход для всех endpoint types
+        System.out.println("🔐 Testing authentication on: " + endpoint.getMethod() + " " + endpoint.getFullUrl());
 
-            // Test for token-related vulnerabilities
-            findings.addAll(testTokenVulnerabilities(endpoint, httpClient));
+        // ✅ Проверяем доступ без токена для endpoint'ов, требующих аутентификации
+        if (endpoint.isRequiresAuthentication()) {
+            findings.addAll(testMissingAuthentication(endpoint, httpClient));
+        }
+
+        // ✅ Проверяем уязвимости токенов для всех endpoint'ов
+        findings.addAll(testTokenVulnerabilities(endpoint, httpClient));
+
+        // ✅ Проверяем authentication endpoints на слабые механизмы
+        if (isAuthEndpoint(endpoint)) {
+            findings.addAll(testWeakAuthentication(endpoint, httpClient));
+        }
+
+        // ✅ ДОБАВЛЕНО: Информационный вывод о результате проверки
+        if (findings.isEmpty()) {
+            System.out.println("✅ Authentication check passed: " + endpoint.getMethod() + " " + endpoint.getPath());
+        } else {
+            System.out.println("🚨 Authentication issues found: " + findings.size() + " on " + endpoint.getPath());
         }
 
         return findings;
@@ -85,95 +97,66 @@ public class BrokenAuthenticationTestCase implements TestCase {
     }
 
     /**
-     * Tests for weak authentication mechanisms on login endpoints.
-     * This includes trying common weak credentials, checking for account lockout,
-     * and examining token generation practices.
-     *
-     * @param endpoint The authentication endpoint to test
-     * @param httpClient The HTTP client to use for requests
-     * @return A list of findings related to weak authentication
+     * ✅ УПРОЩЕННАЯ ЛОГИКА: Тестирует слабые механизмы аутентификации
      */
     private List<Finding> testWeakAuthentication(EndpointInfo endpoint, HttpClient httpClient) {
         List<Finding> findings = new ArrayList<>();
 
-        // Only test POST methods for now (login attempts)
+        // Only test POST methods for login endpoints
         if (!endpoint.getMethod().equalsIgnoreCase("POST")) {
             return findings;
         }
 
-        // Test for common credentials
-        List<Map<String, String>> testCredentials = List.of(
-                Map.of("username", "admin", "password", "admin"),
-                Map.of("username", "admin", "password", "password"),
-                Map.of("username", "test", "password", "test"),
-                Map.of("username", "user", "password", "password")
-        );
+        System.out.println("🔑 Testing authentication endpoint: " + endpoint.getPath());
 
-        // TODO: Implement actual testing with common credentials to check if they work
-        // TODO: Add detection of account lockout after multiple failed attempts
-        // TODO: Check for rate limiting of authentication attempts to prevent brute force
-
-        Finding finding = new Finding(
-                UUID.randomUUID().toString(),
-                "Authentication Endpoint Requires Manual Review",
-                "Authentication endpoints should be carefully reviewed for weak credentials, account lockout mechanisms, and proper token validation.",
-                Severity.MEDIUM,
-                getId(),
-                endpoint.getMethod() + " " + endpoint.getPath(),
-                "Implement strong password policies, account lockout after failed attempts, and proper token generation using industry standard algorithms."
-        );
-
-        findings.add(finding);
+        // ✅ ДОБАВЛЕНО: Проверка common security headers
+        try {
+            Map<String, String> headers = new HashMap<>();
+            String response = httpClient.get(endpoint.getFullUrl(), headers);
+            
+            // Проверяем наличие security headers
+            if (!response.contains("rate-limit") && !response.contains("lockout")) {
+                Finding finding = new Finding(
+                    "AUTH-WEAK-01",
+                    "Weak Authentication Mechanisms",
+                    "🔐 Authentication endpoint may lack brute force protection mechanisms:\n" +
+                    "• No rate limiting detected\n" + 
+                    "• No account lockout mechanisms visible\n" +
+                    "• Consider implementing additional security controls",
+                    Severity.MEDIUM,
+                    getId(),
+                    endpoint.getFullUrl(),
+                    "✅ IMPROVE AUTHENTICATION SECURITY:\n" +
+                    "• Implement rate limiting (max attempts per minute)\n" +
+                    "• Add account lockout after 5-10 failed attempts\n" +
+                    "• Use strong password policies\n" +
+                    "• Consider multi-factor authentication"
+                );
+                findings.add(finding);
+            }
+        } catch (Exception e) {
+            // Expected for authentication endpoints
+        }
 
         return findings;
     }
 
     /**
-     * Tests if an endpoint that should require authentication is accessible without it.
-     * This checks for inconsistent application of authentication controls across the API.
-     *
-     * @param endpoint The endpoint to test
-     * @param httpClient The HTTP client to use for requests
-     * @return A list of findings related to missing authentication
+     * ✅ УПРОЩЕННАЯ И УЛУЧШЕННАЯ ЛОГИКА: Проверяет отсутствие аутентификации
      */
     private List<Finding> testMissingAuthentication(EndpointInfo endpoint, HttpClient httpClient) {
         List<Finding> findings = new ArrayList<>();
 
-        // Skip endpoints marked as not requiring authentication
-        if (!endpoint.isRequiresAuthentication()) {
-            return findings;
-        }
-
         try {
-            // Attempt to access the endpoint without authentication headers
-            String fullUrl = "https://example.com" + endpoint.getPath();
-            String response = null;
-
-            // Use the appropriate HTTP method for this endpoint
-            switch (endpoint.getMethod().toUpperCase()) {
-                case "GET" -> response = httpClient.get(fullUrl, Map.of());
-                case "POST" -> response = httpClient.post(fullUrl, Map.of(), "application/json", "{}");
-                case "PUT" -> response = httpClient.put(fullUrl, Map.of(), "application/json", "{}");
-                case "DELETE" -> response = httpClient.delete(fullUrl, Map.of());
-            }
-
-            // Check if the response indicates successful access without authentication
-            // A properly secured endpoint should return an auth error
-            if (response != null && !response.isEmpty() &&
-                    !response.contains("unauthorized") && !response.contains("authentication")) {
-
-                Finding finding = new Finding(
-                        UUID.randomUUID().toString(),
-                        "Missing Authentication Controls",
-                        "The API endpoint appears to be accessible without proper authentication.",
-                        Severity.HIGH,
-                        getId(),
-                        endpoint.getMethod() + " " + endpoint.getPath(),
-                        "Implement consistent authentication checks across all API endpoints that require them."
-                );
-
+            // ✅ ПРОСТАЯ ПРОВЕРКА: Доступен ли endpoint без аутентификации
+            if (isUnauthenticatedAccessAllowed(endpoint, httpClient)) {
+                Finding finding = createAuthBypassFinding(endpoint);
                 findings.add(finding);
+                System.out.println("🚨 AUTH BYPASS: " + endpoint.getMethod() + " " + endpoint.getPath());
+            } else {
+                System.out.println("✅ Auth protected: " + endpoint.getMethod() + " " + endpoint.getPath());
             }
+
         } catch (Exception e) {
             logger.debug("Error testing missing authentication on endpoint {}: {}", endpoint, e.getMessage());
         }
@@ -182,53 +165,304 @@ public class BrokenAuthenticationTestCase implements TestCase {
     }
 
     /**
-     * Tests for token-related vulnerabilities in the API.
-     * This includes examining token validation, expiration, handling,
-     * and potential exposure points.
-     *
-     * @param endpoint The endpoint to test
-     * @param httpClient The HTTP client to use for requests
-     * @return A list of findings related to token vulnerabilities
+     * ✅ ДОБАВЛЕНО: Проверяет, разрешен ли доступ без аутентификации
+     */
+    private boolean isUnauthenticatedAccessAllowed(EndpointInfo endpoint, HttpClient httpClient) {
+        try {
+            // Создаем заголовки без аутентификации
+            Map<String, String> emptyHeaders = new HashMap<>();
+            
+            String response = performUnauthenticatedRequest(endpoint, httpClient, emptyHeaders);
+            int statusCode = extractStatusCode(response);
+            
+            // ✅ Если статус 200 - доступ разрешен без аутентификации (уязвимость)
+            return statusCode == 200;
+            
+        } catch (Exception e) {
+            // Если исключение - вероятно, аутентификация требуется
+            return false;
+        }
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Выполняет запрос без аутентификации в зависимости от метода
+     */
+    private String performUnauthenticatedRequest(EndpointInfo endpoint, HttpClient httpClient, 
+                                               Map<String, String> emptyHeaders) throws IOException {
+        String fullUrl = endpoint.getFullUrl();
+        
+        switch (endpoint.getMethod().toUpperCase()) {
+            case "GET":
+                return httpClient.get(fullUrl, emptyHeaders);
+                
+            case "POST":
+                String requestBody = endpoint.getRequestBody() != null ? endpoint.getRequestBody() : "{}";
+                String contentType = endpoint.getContentType() != null ? endpoint.getContentType() : "application/json";
+                return httpClient.post(fullUrl, emptyHeaders, contentType, requestBody);
+                
+            case "PUT":
+                requestBody = endpoint.getRequestBody() != null ? endpoint.getRequestBody() : "{}";
+                contentType = endpoint.getContentType() != null ? endpoint.getContentType() : "application/json";
+                return httpClient.put(fullUrl, emptyHeaders, contentType, requestBody);
+                
+            case "DELETE":
+                return httpClient.delete(fullUrl, emptyHeaders);
+                
+            default:
+                return httpClient.get(fullUrl, emptyHeaders);
+        }
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Создает finding для обхода аутентификации
+     */
+    private Finding createAuthBypassFinding(EndpointInfo endpoint) {
+        String httpMethod = endpoint.getMethod().toUpperCase();
+        String operationType = getOperationType(httpMethod);
+        
+        return new Finding(
+            "AUTH-BYPASS-01",
+            "Missing Authentication Controls",
+            "🚨 CRITICAL: " + operationType + " endpoint accessible without authentication.\n\n" +
+            "• Endpoint: " + endpoint.getMethod() + " " + endpoint.getPath() + "\n" +
+            "• Expected: 401 Unauthorized for unauthenticated requests\n" +
+            "• Actual: 200 OK without authentication token\n" +
+            "• Impact: Attackers can access sensitive data/modify resources without authentication",
+            Severity.HIGH,
+            getId(),
+            endpoint.getFullUrl(),
+            "✅ CRITICAL REMEDIATION REQUIRED:\n\n" +
+            "1. IMPLEMENT AUTHENTICATION MIDDLEWARE\n" +
+            "   • Validate authentication tokens on every request\n" +
+            "   • Return 401 Unauthorized for missing/invalid tokens\n\n" +
+            "2. ENFORCE ACCESS CONTROL\n" +
+            "   • Apply authentication consistently across all endpoints\n" +
+            "   • Use framework-level security controls\n\n" +
+            "3. SECURE BY DEFAULT\n" +
+            "   • Assume all endpoints require authentication unless explicitly public\n" +
+            "   • Conduct regular security reviews of authentication logic"
+        );
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Возвращает тип операции для HTTP метода
+     */
+    private String getOperationType(String httpMethod) {
+        switch (httpMethod) {
+            case "GET": return "Data retrieval";
+            case "POST": return "Data creation";
+            case "PUT": return "Data update"; 
+            case "DELETE": return "Data deletion";
+            case "PATCH": return "Data modification";
+            default: return "API operation";
+        }
+    }
+
+    /**
+     * ✅ УЛУЧШЕННЫЙ МЕТОД: Определяет статус код из ответа
+     */
+    private int extractStatusCode(String response) {
+        if (response == null || response.trim().isEmpty()) {
+            return 500; // Assume error for null/empty responses
+        }
+        
+        // ✅ УЛУЧШЕННЫЕ ЭВРИСТИКИ ДЛЯ ОПРЕДЕЛЕНИЯ СТАТУСА
+        
+        // 1. Проверяем явные признаки ошибок аутентификации
+        boolean isAuthError = response.toLowerCase().contains("unauthorized") || 
+                             response.toLowerCase().contains("authentication") ||
+                             response.toLowerCase().contains("401") ||
+                             response.toLowerCase().contains("403") ||
+                             response.toLowerCase().contains("access denied") ||
+                             response.toLowerCase().contains("forbidden") ||
+                             response.toLowerCase().contains("invalid token") ||
+                             response.toLowerCase().contains("missing authorization");
+
+        if (isAuthError) {
+            return 401;
+        }
+        
+        // 2. Проверяем JSON ответы
+        if (response.trim().startsWith("{") && response.trim().endsWith("}")) {
+            // Проверяем success indicators
+            boolean hasSuccessData = response.toLowerCase().contains("\"status\":\"success\"") ||
+                                   response.toLowerCase().contains("\"success\":true") ||
+                                   response.toLowerCase().contains("\"data\":") ||
+                                   response.toLowerCase().contains("\"result\":") ||
+                                   (response.length() > 100 && !response.toLowerCase().contains("\"error\""));
+            
+            // Проверяем error indicators  
+            boolean hasError = response.toLowerCase().contains("\"error\"") ||
+                             response.toLowerCase().contains("\"message\"") && 
+                             (response.toLowerCase().contains("unauthorized") || 
+                              response.toLowerCase().contains("forbidden"));
+            
+            if (hasSuccessData && !hasError) {
+                return 200;
+            } else if (hasError) {
+                return 401;
+            }
+        }
+        
+        // 3. Проверяем HTML ошибки
+        if (response.toLowerCase().contains("<title>401") ||
+            response.toLowerCase().contains("<title>403") ||
+            response.toLowerCase().contains("<title>error") ||
+            response.toLowerCase().contains("http status 401") ||
+            response.toLowerCase().contains("http status 403")) {
+            return 401;
+        }
+        
+        // 4. Проверяем успешные ответы по длине и содержанию
+        if (response.length() > 50 && 
+            !response.toLowerCase().contains("error") &&
+            !response.toLowerCase().contains("unauthorized") &&
+            !response.toLowerCase().contains("forbidden")) {
+            return 200; // Likely successful response
+        }
+        
+        // 5. По умолчанию считаем ошибкой
+        return 500;
+    }
+
+    /**
+     * ✅ УЛУЧШЕННЫЙ МЕТОД: Тестирует уязвимости токенов
      */
     private List<Finding> testTokenVulnerabilities(EndpointInfo endpoint, HttpClient httpClient) {
         List<Finding> findings = new ArrayList<>();
 
-        // TODO: Implement JWT token analysis for:
-        //  - Improper signing algorithms (e.g., 'none' algorithm)
-        //  - Missing expiration claims
-        //  - Missing signature validation
-        //  - Weak signing keys
-        //  - Token sidejacking possibilities
+        System.out.println("🔐 Testing token validation on: " + endpoint.getPath());
 
-        // TODO: Add session handling tests for:
-        //  - Session fixation vulnerabilities
-        //  - Improper timeout implementations
-        //  - Missing session invalidation on logout
+        // Test 1: Empty token
+        if (testEmptyToken(endpoint, httpClient)) {
+            findings.add(createTokenFinding("Empty token accepted", "TOKEN-EMPTY-01", endpoint));
+        }
 
-        // TODO: Implement 2FA bypass attempt checks:
-        //  - Direct resource access bypass
-        //  - 2FA code brute forcing
-        //  - Skipping 2FA flow entirely
+        // Test 2: Malformed token
+        if (testMalformedToken(endpoint, httpClient)) {
+            findings.add(createTokenFinding("Malformed token accepted", "TOKEN-INVALID-01", endpoint));
+        }
 
-        // TODO: Add credential stuffing detection:
-        //  - Test for rate limiting after multiple failed attempts
-        //  - Account lockout mechanisms
+        // Test 3: Token in URL parameters
+        if (testTokenInUrl(endpoint, httpClient)) {
+            findings.add(createTokenFinding("Token accepted in URL parameters", "TOKEN-URL-01", endpoint));
+        }
 
-        // TODO: Implement OAuth flow testing for:
-        //  - Redirect URI validation issues
-        //  - CSRF during authorization flow
-        //  - Client secret exposure
-
-        // TODO: Add token leakage checks:
-        //  - Tokens in URLs
-        //  - Tokens in error messages
-        //  - Tokens logged in server logs
-
-        // TODO: Implement secure cookie tests:
-        //  - Verify Secure flag presence
-        //  - Verify HttpOnly flag presence
-        //  - Verify SameSite attribute configuration
+        // Test 4: Test without any authentication headers
+        if (testNoAuthHeaders(endpoint, httpClient)) {
+            findings.add(createTokenFinding("Request accepted without any authentication headers", "TOKEN-MISSING-01", endpoint));
+        }
 
         return findings;
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Тестирует пустой токен
+     */
+    private boolean testEmptyToken(EndpointInfo endpoint, HttpClient httpClient) {
+        try {
+            Map<String, String> emptyTokenHeaders = new HashMap<>();
+            emptyTokenHeaders.put("Authorization", "");
+            
+            String response = performTestRequest(endpoint, httpClient, emptyTokenHeaders);
+            return extractStatusCode(response) == 200;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Тестирует некорректный токен
+     */
+    private boolean testMalformedToken(EndpointInfo endpoint, HttpClient httpClient) {
+        try {
+            Map<String, String> malformedTokenHeaders = new HashMap<>();
+            malformedTokenHeaders.put("Authorization", "Bearer invalid_token_12345");
+            
+            String response = performTestRequest(endpoint, httpClient, malformedTokenHeaders);
+            return extractStatusCode(response) == 200;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Тестирует токен в URL параметрах
+     */
+    private boolean testTokenInUrl(EndpointInfo endpoint, HttpClient httpClient) {
+        try {
+            String urlWithToken = endpoint.getFullUrl() + 
+                (endpoint.getFullUrl().contains("?") ? "&" : "?") + "token=test123";
+            String response = httpClient.get(urlWithToken, new HashMap<>());
+            return extractStatusCode(response) == 200;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Тестирует запрос без заголовков аутентификации
+     */
+    private boolean testNoAuthHeaders(EndpointInfo endpoint, HttpClient httpClient) {
+        try {
+            String response = performTestRequest(endpoint, httpClient, new HashMap<>());
+            return extractStatusCode(response) == 200;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Выполняет тестовый запрос с указанными заголовками
+     */
+    private String performTestRequest(EndpointInfo endpoint, HttpClient httpClient, 
+                                    Map<String, String> headers) throws IOException {
+        String fullUrl = endpoint.getFullUrl();
+        
+        switch (endpoint.getMethod().toUpperCase()) {
+            case "GET":
+                return httpClient.get(fullUrl, headers);
+            case "POST":
+                String requestBody = endpoint.getRequestBody() != null ? endpoint.getRequestBody() : "{}";
+                String contentType = endpoint.getContentType() != null ? endpoint.getContentType() : "application/json";
+                return httpClient.post(fullUrl, headers, contentType, requestBody);
+            case "PUT":
+                requestBody = endpoint.getRequestBody() != null ? endpoint.getRequestBody() : "{}";
+                contentType = endpoint.getContentType() != null ? endpoint.getContentType() : "application/json";
+                return httpClient.put(fullUrl, headers, contentType, requestBody);
+            case "DELETE":
+                return httpClient.delete(fullUrl, headers);
+            default:
+                return httpClient.get(fullUrl, headers);
+        }
+    }
+
+    /**
+     * ✅ УЛУЧШЕННЫЙ МЕТОД: Создает finding для уязвимостей токенов
+     */
+    private Finding createTokenFinding(String issue, String findingId, EndpointInfo endpoint) {
+        return new Finding(
+            findingId,
+            "Token Validation Vulnerability",
+            "🔐 " + issue + " - Authentication token validation is weak or missing\n\n" +
+            "• Vulnerability: " + issue + "\n" +
+            "• Endpoint: " + endpoint.getMethod() + " " + endpoint.getPath() + "\n" +
+            "• Impact: Potential unauthorized access through token manipulation",
+            Severity.MEDIUM,
+            getId(),
+            endpoint.getFullUrl(),
+            "✅ IMPROVE TOKEN VALIDATION:\n\n" +
+            "1. STRICT TOKEN VALIDATION\n" +
+            "   • Reject empty, malformed, or invalid tokens\n" +
+            "   • Validate token signature and expiration\n\n" +
+            "2. SECURE TOKEN HANDLING\n" +
+            "   • Never accept tokens in URL parameters\n" +
+            "   • Use Authorization header exclusively\n" +
+            "   • Implement proper token revocation\n\n" +
+            "3. DEFENSE IN DEPTH\n" +
+            "   • Log authentication attempts\n" +
+            "   • Monitor for suspicious token usage\n" +
+            "   • Regular security testing of authentication flows"
+        );
     }
 }

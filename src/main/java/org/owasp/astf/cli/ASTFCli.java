@@ -7,6 +7,9 @@ import org.owasp.astf.core.result.Finding;
 import org.owasp.astf.reporting.JsonReportGenerator;
 
 public class ASTFCli {
+    // ✅ ДОБАВЛЕНО: Глобальный флаг verbose для легкого доступа
+    private static boolean globalVerbose = false;
+
     public static void main(String[] args) {
         if (args.length == 0) {
             printUsage();
@@ -20,8 +23,10 @@ public class ASTFCli {
             System.exit(1);
         }
 
+        ScanConfig config = null;
         try {
-            ScanConfig config = parseArguments(args);
+            config = parseArguments(args);
+            globalVerbose = config.isVerbose();
             
             // Установка значения по умолчанию для output file
             if (config.getOutputFile() == null || config.getOutputFile().isEmpty()) {
@@ -40,21 +45,34 @@ public class ASTFCli {
                 System.out.println("🌐 GOST Gateway: Enabled");
             }
             System.out.println("💾 Output: " + config.getOutputFile());
+            if (globalVerbose) {
+                System.out.println("🔍 Verbose Mode: Enabled - Detailed logging activated");
+            }
+
+            // ✅ ДОБАВЛЕНО: Подробная информация в verbose mode
+            if (globalVerbose) {
+                logVerboseConfigInfo(config);
+            }
 
             // Запуск сканера
             Scanner scanner = new Scanner(config);
             ScanResult result = scanner.scan(); // ✅ Получаем результат
             
             // ✅ Показываем результаты в консоли
-            printResults(result);
+            printResults(result, globalVerbose);
             
             // ✅ Сохранение в файл
-            saveReport(result, config.getOutputFile());
+            saveReport(result, config.getOutputFile(), globalVerbose);
+            
+            System.exit(0); // Успешное завершение
             
         } catch (Exception e) {
             System.err.println("❌ Error during scanning: " + e.getMessage());
-            if (isVerbose(args)) {
+            if (globalVerbose || isVerbose(args)) {
+                System.err.println("🔍 Verbose Error Details:");
                 e.printStackTrace();
+            } else {
+                System.err.println("💡 Use --verbose for detailed error information");
             }
             System.exit(1);
         }
@@ -104,7 +122,9 @@ public class ASTFCli {
                     }
                     break;
                 case "--verbose":
+                    // ✅ ДОБАВЛЕНО: Поддержка --verbose с установкой системного свойства
                     config.setVerbose(true);
+                    System.setProperty("astf.verbose", "true");
                     System.out.println("✅ Verbose mode enabled");
                     break;
                 case "--threads":
@@ -151,6 +171,30 @@ public class ASTFCli {
         }
 
         return config;
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Логирует подробную информацию о конфигурации в verbose mode
+     */
+    private static void logVerboseConfigInfo(ScanConfig config) {
+        System.out.println("\n🔍 VERBOSE CONFIGURATION DETAILS:");
+        System.out.println("=================================");
+        System.out.println("Target URL: " + config.getTargetUrl());
+        System.out.println("OpenAPI Spec: " + (config.getOpenApiSpecPath() != null ? config.getOpenApiSpecPath() : "Not provided"));
+        System.out.println("GOST Gateway: " + (config.isUseGost() ? "Enabled" : "Disabled"));
+        System.out.println("Output File: " + config.getOutputFile());
+        System.out.println("Output Format: " + config.getOutputFormat());
+        System.out.println("Threads: " + config.getThreads());
+        System.out.println("Timeout: " + config.getTimeoutMinutes() + " minutes");
+        System.out.println("Discovery Enabled: " + config.isDiscoveryEnabled());
+        System.out.println("Max RPS: " + config.getMaxRequestsPerSecond());
+        System.out.println("Follow Redirects: " + config.isFollowRedirects());
+        
+        if (config.getAuthHeader() != null) {
+            System.out.println("Auth Header: " + maskToken(config.getAuthHeader()));
+        }
+        
+        System.out.println("=================================\n");
     }
 
     /**
@@ -218,7 +262,7 @@ public class ASTFCli {
     /**
      * ✅ Выводит результаты сканирования в консоль
      */
-    private static void printResults(ScanResult result) {
+    private static void printResults(ScanResult result, boolean verbose) {
         System.out.println("\n📊 SCAN RESULTS");
         System.out.println("================");
         
@@ -234,7 +278,15 @@ public class ASTFCli {
                 // ✅ ИСПРАВЛЕНИЕ: Используем правильные методы - getId() и getEndpoint()
                 System.out.println(severityIcon + " [" + finding.getSeverity() + "] " + 
                     finding.getId() + ": " + finding.getEndpoint());
-                System.out.println("   Description: " + finding.getDescription().split("\n")[0]);
+                
+                if (verbose) {
+                    // ✅ ДОБАВЛЕНО: Подробная информация в verbose mode
+                    System.out.println("   Description: " + finding.getDescription());
+                    System.out.println("   Remediation: " + finding.getRemediation());
+                    System.out.println("   ---");
+                } else {
+                    System.out.println("   Description: " + finding.getDescription().split("\n")[0]);
+                }
                 System.out.println();
             }
         }
@@ -248,6 +300,45 @@ public class ASTFCli {
             long duration = java.time.Duration.between(result.getScanStartTime(), result.getScanEndTime()).toSeconds();
             System.out.println("Duration: " + duration + " seconds");
         }
+
+        // ✅ ДОБАВЛЕНО: Детальная статистика в verbose mode
+        if (verbose) {
+            printDetailedMetrics(result);
+        }
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Выводит детальную статистику сканирования
+     */
+    private static void printDetailedMetrics(ScanResult result) {
+        System.out.println("\n🔍 DETAILED SCAN METRICS:");
+        System.out.println("=========================");
+        
+        // Подсчитываем находки по уровням серьезности
+        int critical = 0, high = 0, medium = 0, low = 0, info = 0;
+        for (Finding finding : result.getFindings()) {
+            switch (finding.getSeverity()) {
+                case CRITICAL: critical++; break;
+                case HIGH: high++; break;
+                case MEDIUM: medium++; break;
+                case LOW: low++; break;
+                case INFO: info++; break;
+            }
+        }
+        
+        System.out.println("Findings by Severity:");
+        System.out.println("  🔴 CRITICAL: " + critical);
+        System.out.println("  🟠 HIGH: " + high);
+        System.out.println("  🟡 MEDIUM: " + medium);
+        System.out.println("  🟢 LOW: " + low);
+        System.out.println("  🔵 INFO: " + info);
+        
+        System.out.println("\nScan Configuration:");
+        System.out.println("  Target: " + result.getTargetUrl());
+        System.out.println("  Total Findings: " + result.getFindings().size());
+        System.out.println("  Scan Duration: " + 
+            java.time.Duration.between(result.getScanStartTime(), result.getScanEndTime()).toSeconds() + " seconds");
+        System.out.println("=========================");
     }
 
     /**
@@ -267,9 +358,13 @@ public class ASTFCli {
     /**
      * ✅ Сохраняет отчёт в файл
      */
-    private static void saveReport(ScanResult result, String outputFile) {
+    private static void saveReport(ScanResult result, String outputFile, boolean verbose) {
         try {
-            System.out.println("💾 Generating report: " + outputFile);
+            if (verbose) {
+                System.out.println("💾 Generating detailed report: " + outputFile);
+            } else {
+                System.out.println("💾 Generating report: " + outputFile);
+            }
             
             JsonReportGenerator reportGenerator = new JsonReportGenerator();
             
@@ -281,8 +376,11 @@ public class ASTFCli {
             // ✅ Дополнительная информация о файле
             java.io.File file = new java.io.File(outputFile);
             if (file.exists()) {
-                System.out.println("📁 File size: " + file.length() + " bytes");
-                System.out.println("📝 Findings in report: " + result.getFindings().size());
+                if (verbose) {
+                    System.out.println("📁 File size: " + file.length() + " bytes");
+                    System.out.println("📝 Findings in report: " + result.getFindings().size());
+                    System.out.println("📁 Absolute path: " + file.getAbsolutePath());
+                }
             } else {
                 System.err.println("❌ Report file was not created: " + outputFile);
             }
@@ -291,13 +389,17 @@ public class ASTFCli {
             System.err.println("❌ Failed to save report: " + e.getMessage());
             System.err.println("💡 Check if the output directory exists and is writable");
             
-            // ✅ ДОБАВЛЕНО: Более детальная диагностика
-            System.err.println("📋 Diagnostic info:");
-            System.err.println("  - Output file: " + outputFile);
-            System.err.println("  - Current directory: " + System.getProperty("user.dir"));
-            System.err.println("  - File separator: " + java.io.File.separator);
-            
-            e.printStackTrace();
+            // ✅ ДОБАВЛЕНО: Более детальная диагностика в verbose mode
+            if (verbose) {
+                System.err.println("🔍 Detailed Diagnostic Info:");
+                System.err.println("  - Output file: " + outputFile);
+                System.err.println("  - Current directory: " + System.getProperty("user.dir"));
+                System.err.println("  - File separator: " + java.io.File.separator);
+                System.err.println("  - User home: " + System.getProperty("user.home"));
+                System.err.println("  - Temp directory: " + System.getProperty("java.io.tmpdir"));
+                
+                e.printStackTrace();
+            }
         }
     }
 
@@ -334,7 +436,7 @@ public class ASTFCli {
         System.out.println("  --output-format <format>    Output format: json, html (default: json)");
         System.out.println("  --threads <number>          Number of concurrent threads (default: 10)");
         System.out.println("  --timeout <minutes>         Scan timeout in minutes (default: 30)");
-        System.out.println("  --verbose                   Enable verbose logging");
+        System.out.println("  --verbose                   Enable verbose logging with detailed output");
         System.out.println();
         System.out.println("Examples:");
         System.out.println("  java -jar astf.jar scan --target https://vbank.open.bankingapi.ru \\");
@@ -344,6 +446,12 @@ public class ASTFCli {
         System.out.println("    --use-gost --output-file my_scan.json --threads 5");
         System.out.println();
         System.out.println("  java -jar astf.jar scan --target https://vbank.open.bankingapi.ru \\");
-        System.out.println("    --auth-header \"Authorization: Bearer token\" --openapi spec.json --output-file results.json");
+        System.out.println("    --auth-header \"Authorization: Bearer token\" --openapi spec.json --output-file results.json --verbose");
+        System.out.println();
+        System.out.println("Verbose Mode Benefits:");
+        System.out.println("  • Detailed configuration information");
+        System.out.println("  • Full finding descriptions and remediation steps");
+        System.out.println("  • Comprehensive scan metrics and statistics");
+        System.out.println("  • Enhanced error diagnostics and debugging");
     }
 }

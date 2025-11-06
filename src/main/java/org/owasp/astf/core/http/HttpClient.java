@@ -50,6 +50,9 @@ public class HttpClient {
     private final ScanConfig config;
     private final Map<String, String> defaultHeaders;
     private final Map<String, List<Cookie>> cookieStore = new HashMap<>();
+    
+    // ✅ ДОБАВЛЕНО: Поле для хранения последнего статус-кода
+    private int lastStatusCode = 0;
 
     /**
      * Creates a new HTTP client with the specified configuration.
@@ -80,6 +83,15 @@ public class HttpClient {
         }
 
         this.client = builder.build();
+    }
+
+    /**
+     * ✅ ДОБАВЛЕНО: Метод получения последнего статус-кода
+     * 
+     * @return Последний HTTP статус-код, полученный в результате выполнения запроса
+     */
+    public int getLastStatusCode() {
+        return lastStatusCode;
     }
 
     /**
@@ -132,6 +144,8 @@ public class HttpClient {
     public String delete(String url, Map<String, String> headers) throws IOException {
         Request request = createRequest(url, "DELETE", headers, null, null);
         try (Response response = client.newCall(request).execute()) {
+            // ✅ ОБНОВЛЕНО: Сохраняем статус-код
+            this.lastStatusCode = response.code();
             if (response.body() != null) {
                 return response.body().string();
             }
@@ -145,6 +159,8 @@ public class HttpClient {
     public String options(String url, Map<String, String> headers) throws IOException {
         Request request = createRequest(url, "OPTIONS", headers, null, null);
         try (Response response = client.newCall(request).execute()) {
+            // ✅ ОБНОВЛЕНО: Сохраняем статус-код
+            this.lastStatusCode = response.code();
             if (response.body() != null) {
                 return response.body().string();
             }
@@ -179,6 +195,8 @@ public class HttpClient {
     public Map<String, List<String>> head(String url, Map<String, String> headers) throws IOException {
         Response response = client.newCall(createRequest(url, "HEAD", headers, null, null)).execute();
         try {
+            // ✅ ОБНОВЛЕНО: Сохраняем статус-код
+            this.lastStatusCode = response.code();
             return extractHeaders(response);
         } finally {
             response.close();
@@ -207,6 +225,8 @@ public class HttpClient {
     public int getStatusCode(String url, Map<String, String> headers) throws IOException {
         Request request = createRequest(url, "GET", headers, null, null);
         try (Response response = client.newCall(request).execute()) {
+            // ✅ ОБНОВЛЕНО: Сохраняем статус-код
+            this.lastStatusCode = response.code();
             return response.code();
         }
     }
@@ -217,6 +237,8 @@ public class HttpClient {
     public HttpResponse getFullResponse(String url, Map<String, String> headers) throws IOException {
         Request request = createRequest(url, "GET", headers, null, null);
         try (Response response = client.newCall(request).execute()) {
+            // ✅ ОБНОВЛЕНО: Сохраняем статус-код
+            this.lastStatusCode = response.code();
             String body = response.body() != null ? response.body().string() : "";
             Map<String, List<String>> responseHeaders = extractHeaders(response);
             return new HttpResponse(response.code(), responseHeaders, body);
@@ -254,6 +276,8 @@ public class HttpClient {
                 @Override
                 public void onResponse(Call call, Response response) throws IOException {
                     try (ResponseBody responseBody = response.body()) {
+                        // ✅ ОБНОВЛЕНО: Сохраняем статус-код для асинхронных запросов
+                        lastStatusCode = response.code();
                         String body = responseBody != null ? responseBody.string() : "";
                         Map<String, List<String>> headers = extractHeaders(response);
                         int statusCode = response.code();
@@ -324,6 +348,8 @@ public class HttpClient {
      */
     private String executeRequest(Request request) throws IOException {
         try (Response response = client.newCall(request).execute()) {
+            // ✅ ОБНОВЛЕНО: Сохраняем статус-код
+            this.lastStatusCode = response.code();
             if (response.body() != null) {
                 return response.body().string();
             }

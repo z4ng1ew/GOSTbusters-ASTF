@@ -1,41 +1,65 @@
 {
   "targetUrl" : "https://vbank.open.bankingapi.ru/",
-  "scanStartTime" : "2025-11-06T01:07:25.2688268",
-  "scanEndTime" : "2025-11-06T01:09:27.6184388",
+  "scanStartTime" : "2025-11-06T11:10:25.4454593",
+  "scanEndTime" : "2025-11-06T11:10:30.1732211",
   "summary" : {
-    "totalFindings" : 38,
+    "totalFindings" : 146,
     "bySeverity" : {
       "critical" : 0,
-      "high" : 36,
-      "medium" : 1,
+      "high" : 32,
+      "medium" : 113,
       "low" : 0,
       "info" : 1
     }
   },
   "findings" : [ {
-    "id" : "4920080a-c264-4739-9ccc-4d48dd64d53b",
-    "title" : "Authentication Endpoint Requires Manual Review",
-    "description" : "Authentication endpoints should be carefully reviewed for weak credentials, account lockout mechanisms, and proper token validation.",
-    "severity" : "MEDIUM",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "POST /auth/bank-token",
-    "remediation" : "Implement strong password policies, account lockout after failed attempts, and proper token generation using industry standard algorithms."
+    "id" : "IDOR-01",
+    "title" : "Insecure Direct Object Reference",
+    "description" : "Доступ к ресурсу через прямую ссылку на ID без проверки авторизации",
+    "severity" : "HIGH",
+    "testCaseId" : "IDOR",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/acc-9999",
+    "remediation" : "Добавьте проверку принадлежности ресурса пользователю"
   }, {
     "id" : "INSECURE-DES-01",
     "title" : "Possible Insecure Deserialization",
     "description" : "API accepts potentially dangerous payload without validation",
     "severity" : "HIGH",
     "testCaseId" : "INSECURE-DESERIALIZATION",
-    "endpoint" : "https://vbank.open.bankingapi.ru/payment-consents/request",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts",
     "remediation" : "Implement strict validation of input data and avoid deserializing untrusted data"
   }, {
-    "id" : "IDOR-01",
-    "title" : "Insecure Direct Object Reference",
-    "description" : "Доступ к ресурсу через прямую ссылку на ID без проверки авторизации",
+    "id" : "INSECURE-DES-01",
+    "title" : "Possible Insecure Deserialization",
+    "description" : "API accepts potentially dangerous payload without validation",
     "severity" : "HIGH",
-    "testCaseId" : "IDOR",
-    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/acc-9999/close",
-    "remediation" : "Добавьте проверку принадлежности ресурса пользователю"
+    "testCaseId" : "INSECURE-DESERIALIZATION",
+    "endpoint" : "https://vbank.open.bankingapi.ru/auth/bank-token",
+    "remediation" : "Implement strict validation of input data and avoid deserializing untrusted data"
+  }, {
+    "id" : "INSECURE-DES-01",
+    "title" : "Possible Insecure Deserialization",
+    "description" : "API accepts potentially dangerous payload without validation",
+    "severity" : "HIGH",
+    "testCaseId" : "INSECURE-DESERIALIZATION",
+    "endpoint" : "https://vbank.open.bankingapi.ru/account-consents/request",
+    "remediation" : "Implement strict validation of input data and avoid deserializing untrusted data"
+  }, {
+    "id" : "FLA-01",
+    "title" : "Function Level Authorization Bypass",
+    "description" : "Пользователь может выполнить DELETE на эндпоинте, где у него только GET права",
+    "severity" : "HIGH",
+    "testCaseId" : "FUNCTION-LEVEL-AUTH",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/acc-9999/transactions",
+    "remediation" : "Проверьте права доступа к методам API на уровне авторизации"
+  }, {
+    "id" : "INSECURE-DES-01",
+    "title" : "Possible Insecure Deserialization",
+    "description" : "API accepts potentially dangerous payload without validation",
+    "severity" : "HIGH",
+    "testCaseId" : "INSECURE-DESERIALIZATION",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payments",
+    "remediation" : "Implement strict validation of input data and avoid deserializing untrusted data"
   }, {
     "id" : "INSECURE-DES-01",
     "title" : "Possible Insecure Deserialization",
@@ -50,30 +74,6 @@
     "description" : "Доступ к ресурсу через прямую ссылку на ID без проверки авторизации",
     "severity" : "HIGH",
     "testCaseId" : "IDOR",
-    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/acc-9999/transactions",
-    "remediation" : "Добавьте проверку принадлежности ресурса пользователю"
-  }, {
-    "id" : "INSECURE-DES-01",
-    "title" : "Possible Insecure Deserialization",
-    "description" : "API accepts potentially dangerous payload without validation",
-    "severity" : "HIGH",
-    "testCaseId" : "INSECURE-DESERIALIZATION",
-    "endpoint" : "https://vbank.open.bankingapi.ru/accounts",
-    "remediation" : "Implement strict validation of input data and avoid deserializing untrusted data"
-  }, {
-    "id" : "IDOR-01",
-    "title" : "Insecure Direct Object Reference",
-    "description" : "Доступ к ресурсу через прямую ссылку на ID без проверки авторизации",
-    "severity" : "HIGH",
-    "testCaseId" : "IDOR",
-    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/acc-9999/balances",
-    "remediation" : "Добавьте проверку принадлежности ресурса пользователю"
-  }, {
-    "id" : "IDOR-01",
-    "title" : "Insecure Direct Object Reference",
-    "description" : "Доступ к ресурсу через прямую ссылку на ID без проверки авторизации",
-    "severity" : "HIGH",
-    "testCaseId" : "IDOR",
     "endpoint" : "https://vbank.open.bankingapi.ru/accounts/acc-9999/status",
     "remediation" : "Добавьте проверку принадлежности ресурса пользователю"
   }, {
@@ -82,7 +82,7 @@
     "description" : "Доступ к ресурсу через прямую ссылку на ID без проверки авторизации",
     "severity" : "HIGH",
     "testCaseId" : "IDOR",
-    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/acc-9999",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/acc-9999/close",
     "remediation" : "Добавьте проверку принадлежности ресурса пользователю"
   }, {
     "id" : "INSECURE-DES-01",
@@ -90,16 +90,16 @@
     "description" : "API accepts potentially dangerous payload without validation",
     "severity" : "HIGH",
     "testCaseId" : "INSECURE-DESERIALIZATION",
-    "endpoint" : "https://vbank.open.bankingapi.ru/auth/bank-token",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payment-consents/request",
     "remediation" : "Implement strict validation of input data and avoid deserializing untrusted data"
   }, {
-    "id" : "FLA-01",
-    "title" : "Function Level Authorization Bypass",
-    "description" : "Пользователь может выполнить DELETE на эндпоинте, где у него только GET права",
+    "id" : "INSECURE-DES-01",
+    "title" : "Possible Insecure Deserialization",
+    "description" : "API accepts potentially dangerous payload without validation",
     "severity" : "HIGH",
-    "testCaseId" : "FUNCTION-LEVEL-AUTH",
-    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/acc-9999/transactions",
-    "remediation" : "Проверьте права доступа к методам API на уровне авторизации"
+    "testCaseId" : "INSECURE-DESERIALIZATION",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/close",
+    "remediation" : "Implement strict validation of input data and avoid deserializing untrusted data"
   }, {
     "id" : "INSECURE-DES-01",
     "title" : "Possible Insecure Deserialization",
@@ -114,32 +114,16 @@
     "description" : "API accepts potentially dangerous payload without validation",
     "severity" : "HIGH",
     "testCaseId" : "INSECURE-DESERIALIZATION",
-    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/close",
-    "remediation" : "Implement strict validation of input data and avoid deserializing untrusted data"
-  }, {
-    "id" : "FLA-01",
-    "title" : "Function Level Authorization Bypass",
-    "description" : "Пользователь может выполнить DELETE на эндпоинте, где у него только GET права",
-    "severity" : "HIGH",
-    "testCaseId" : "FUNCTION-LEVEL-AUTH",
-    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/acc-9999/balances",
-    "remediation" : "Проверьте права доступа к методам API на уровне авторизации"
-  }, {
-    "id" : "INSECURE-DES-01",
-    "title" : "Possible Insecure Deserialization",
-    "description" : "API accepts potentially dangerous payload without validation",
-    "severity" : "HIGH",
-    "testCaseId" : "INSECURE-DESERIALIZATION",
-    "endpoint" : "https://vbank.open.bankingapi.ru/account-consents/request",
-    "remediation" : "Implement strict validation of input data and avoid deserializing untrusted data"
-  }, {
-    "id" : "INSECURE-DES-01",
-    "title" : "Possible Insecure Deserialization",
-    "description" : "API accepts potentially dangerous payload without validation",
-    "severity" : "HIGH",
-    "testCaseId" : "INSECURE-DESERIALIZATION",
     "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements",
     "remediation" : "Implement strict validation of input data and avoid deserializing untrusted data"
+  }, {
+    "id" : "IDOR-01",
+    "title" : "Insecure Direct Object Reference",
+    "description" : "Доступ к ресурсу через прямую ссылку на ID без проверки авторизации",
+    "severity" : "HIGH",
+    "testCaseId" : "IDOR",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/acc-9999/balances",
+    "remediation" : "Добавьте проверку принадлежности ресурса пользователю"
   }, {
     "id" : "FLA-01",
     "title" : "Function Level Authorization Bypass",
@@ -149,21 +133,1045 @@
     "endpoint" : "https://vbank.open.bankingapi.ru/accounts/acc-9999",
     "remediation" : "Проверьте права доступа к методам API на уровне авторизации"
   }, {
-    "id" : "EXCESSIVE-DATA-01",
-    "title" : "Excessive Data Exposure",
-    "description" : "Response contains sensitive fields like 'password', 'secret', or 'token'",
+    "id" : "FLA-01",
+    "title" : "Function Level Authorization Bypass",
+    "description" : "Пользователь может выполнить DELETE на эндпоинте, где у него только GET права",
     "severity" : "HIGH",
-    "testCaseId" : "EXCESSIVE-DATA-EXPOSURE",
-    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements",
-    "remediation" : "Remove sensitive data from API responses. Use DTOs to control what data is returned."
+    "testCaseId" : "FUNCTION-LEVEL-AUTH",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/acc-9999/balances",
+    "remediation" : "Проверьте права доступа к методам API на уровне авторизации"
   }, {
-    "id" : "EXCESSIVE-DATA-01",
-    "title" : "Excessive Data Exposure",
-    "description" : "Response contains sensitive fields like 'password', 'secret', or 'token'",
+    "id" : "IDOR-01",
+    "title" : "Insecure Direct Object Reference",
+    "description" : "Доступ к ресурсу через прямую ссылку на ID без проверки авторизации",
     "severity" : "HIGH",
-    "testCaseId" : "EXCESSIVE-DATA-EXPOSURE",
+    "testCaseId" : "IDOR",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/acc-9999/transactions",
+    "remediation" : "Добавьте проверку принадлежности ресурса пользователю"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: GET /account-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/account-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: GET /account-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/account-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: GET /account-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/account-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: GET /account-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/account-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: GET /products\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/products",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: GET /products\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/products",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: GET /products\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/products",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: GET /products\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/products",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: GET /products/{product_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/products/{product_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: GET /products/{product_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/products/{product_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: GET /products/{product_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/products/{product_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: GET /products/{product_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/products/{product_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: POST /accounts\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: POST /accounts\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: POST /accounts\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: POST /accounts\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: GET /\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: GET /\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: GET /\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: GET /\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: DELETE /account-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/account-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: DELETE /account-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/account-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: DELETE /account-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/account-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: DELETE /account-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/account-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: GET /.well-known/jwks.json\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/.well-known/jwks.json",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: GET /.well-known/jwks.json\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/.well-known/jwks.json",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: GET /.well-known/jwks.json\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/.well-known/jwks.json",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: GET /.well-known/jwks.json\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/.well-known/jwks.json",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: GET /health\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/health",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: GET /health\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/health",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: GET /health\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/health",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: GET /health\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/health",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: POST /account-consents/request\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/account-consents/request",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: POST /account-consents/request\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/account-consents/request",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: POST /account-consents/request\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/account-consents/request",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: POST /account-consents/request\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/account-consents/request",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: POST /payment-consents/request\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payment-consents/request",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: POST /payment-consents/request\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payment-consents/request",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: POST /payment-consents/request\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payment-consents/request",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: POST /payment-consents/request\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payment-consents/request",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "AUTH-BYPASS-01",
+    "title" : "Missing Authentication Controls",
+    "description" : "\uD83D\uDEA8 CRITICAL: Data retrieval endpoint accessible without authentication.\n\n• Endpoint: GET /accounts/{account_id}/transactions\n• Expected: 401 Unauthorized for unauthenticated requests\n• Actual: 200 OK without authentication token\n• Impact: Attackers can access sensitive data/modify resources without authentication",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/transactions",
+    "remediation" : "✅ CRITICAL REMEDIATION REQUIRED:\n\n1. IMPLEMENT AUTHENTICATION MIDDLEWARE\n   • Validate authentication tokens on every request\n   • Return 401 Unauthorized for missing/invalid tokens\n\n2. ENFORCE ACCESS CONTROL\n   • Apply authentication consistently across all endpoints\n   • Use framework-level security controls\n\n3. SECURE BY DEFAULT\n   • Assume all endpoints require authentication unless explicitly public\n   • Conduct regular security reviews of authentication logic"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: GET /accounts/{account_id}/transactions\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/transactions",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: GET /accounts/{account_id}/transactions\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/transactions",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: GET /accounts/{account_id}/transactions\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/transactions",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: GET /accounts/{account_id}/transactions\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/transactions",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: GET /accounts\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: GET /accounts\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: GET /accounts\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: GET /accounts\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "AUTH-BYPASS-01",
+    "title" : "Missing Authentication Controls",
+    "description" : "\uD83D\uDEA8 CRITICAL: Data deletion endpoint accessible without authentication.\n\n• Endpoint: DELETE /product-agreements/{agreement_id}\n• Expected: 401 Unauthorized for unauthenticated requests\n• Actual: 200 OK without authentication token\n• Impact: Attackers can access sensitive data/modify resources without authentication",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
     "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements/{agreement_id}",
-    "remediation" : "Remove sensitive data from API responses. Use DTOs to control what data is returned."
+    "remediation" : "✅ CRITICAL REMEDIATION REQUIRED:\n\n1. IMPLEMENT AUTHENTICATION MIDDLEWARE\n   • Validate authentication tokens on every request\n   • Return 401 Unauthorized for missing/invalid tokens\n\n2. ENFORCE ACCESS CONTROL\n   • Apply authentication consistently across all endpoints\n   • Use framework-level security controls\n\n3. SECURE BY DEFAULT\n   • Assume all endpoints require authentication unless explicitly public\n   • Conduct regular security reviews of authentication logic"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: DELETE /product-agreements/{agreement_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements/{agreement_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: DELETE /product-agreements/{agreement_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements/{agreement_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: DELETE /product-agreements/{agreement_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements/{agreement_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: DELETE /product-agreements/{agreement_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements/{agreement_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "AUTH-BYPASS-01",
+    "title" : "Missing Authentication Controls",
+    "description" : "\uD83D\uDEA8 CRITICAL: Data update endpoint accessible without authentication.\n\n• Endpoint: PUT /accounts/{account_id}/close\n• Expected: 401 Unauthorized for unauthenticated requests\n• Actual: 200 OK without authentication token\n• Impact: Attackers can access sensitive data/modify resources without authentication",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/close",
+    "remediation" : "✅ CRITICAL REMEDIATION REQUIRED:\n\n1. IMPLEMENT AUTHENTICATION MIDDLEWARE\n   • Validate authentication tokens on every request\n   • Return 401 Unauthorized for missing/invalid tokens\n\n2. ENFORCE ACCESS CONTROL\n   • Apply authentication consistently across all endpoints\n   • Use framework-level security controls\n\n3. SECURE BY DEFAULT\n   • Assume all endpoints require authentication unless explicitly public\n   • Conduct regular security reviews of authentication logic"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: PUT /accounts/{account_id}/close\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/close",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: PUT /accounts/{account_id}/close\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/close",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: PUT /accounts/{account_id}/close\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/close",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: PUT /accounts/{account_id}/close\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/close",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "AUTH-BYPASS-01",
+    "title" : "Missing Authentication Controls",
+    "description" : "\uD83D\uDEA8 CRITICAL: Data deletion endpoint accessible without authentication.\n\n• Endpoint: DELETE /product-agreement-consents/{consent_id}\n• Expected: 401 Unauthorized for unauthenticated requests\n• Actual: 200 OK without authentication token\n• Impact: Attackers can access sensitive data/modify resources without authentication",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreement-consents/{consent_id}",
+    "remediation" : "✅ CRITICAL REMEDIATION REQUIRED:\n\n1. IMPLEMENT AUTHENTICATION MIDDLEWARE\n   • Validate authentication tokens on every request\n   • Return 401 Unauthorized for missing/invalid tokens\n\n2. ENFORCE ACCESS CONTROL\n   • Apply authentication consistently across all endpoints\n   • Use framework-level security controls\n\n3. SECURE BY DEFAULT\n   • Assume all endpoints require authentication unless explicitly public\n   • Conduct regular security reviews of authentication logic"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: DELETE /product-agreement-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreement-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: DELETE /product-agreement-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreement-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: DELETE /product-agreement-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreement-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: DELETE /product-agreement-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreement-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: GET /payment-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payment-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: GET /payment-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payment-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: GET /payment-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payment-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: GET /payment-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payment-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: POST /auth/bank-token\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/auth/bank-token",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: POST /auth/bank-token\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/auth/bank-token",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: POST /auth/bank-token\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/auth/bank-token",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: POST /auth/bank-token\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/auth/bank-token",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "AUTH-WEAK-01",
+    "title" : "Weak Authentication Mechanisms",
+    "description" : "\uD83D\uDD10 Authentication endpoint may lack brute force protection mechanisms:\n• No rate limiting detected\n• No account lockout mechanisms visible\n• Consider implementing additional security controls",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/auth/bank-token",
+    "remediation" : "✅ IMPROVE AUTHENTICATION SECURITY:\n• Implement rate limiting (max attempts per minute)\n• Add account lockout after 5-10 failed attempts\n• Use strong password policies\n• Consider multi-factor authentication"
+  }, {
+    "id" : "AUTH-BYPASS-01",
+    "title" : "Missing Authentication Controls",
+    "description" : "\uD83D\uDEA8 CRITICAL: Data retrieval endpoint accessible without authentication.\n\n• Endpoint: GET /product-agreements/{agreement_id}\n• Expected: 401 Unauthorized for unauthenticated requests\n• Actual: 200 OK without authentication token\n• Impact: Attackers can access sensitive data/modify resources without authentication",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements/{agreement_id}",
+    "remediation" : "✅ CRITICAL REMEDIATION REQUIRED:\n\n1. IMPLEMENT AUTHENTICATION MIDDLEWARE\n   • Validate authentication tokens on every request\n   • Return 401 Unauthorized for missing/invalid tokens\n\n2. ENFORCE ACCESS CONTROL\n   • Apply authentication consistently across all endpoints\n   • Use framework-level security controls\n\n3. SECURE BY DEFAULT\n   • Assume all endpoints require authentication unless explicitly public\n   • Conduct regular security reviews of authentication logic"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: GET /product-agreements/{agreement_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements/{agreement_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: GET /product-agreements/{agreement_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements/{agreement_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: GET /product-agreements/{agreement_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements/{agreement_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: GET /product-agreements/{agreement_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements/{agreement_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "AUTH-BYPASS-01",
+    "title" : "Missing Authentication Controls",
+    "description" : "\uD83D\uDEA8 CRITICAL: Data creation endpoint accessible without authentication.\n\n• Endpoint: POST /product-agreements\n• Expected: 401 Unauthorized for unauthenticated requests\n• Actual: 200 OK without authentication token\n• Impact: Attackers can access sensitive data/modify resources without authentication",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements",
+    "remediation" : "✅ CRITICAL REMEDIATION REQUIRED:\n\n1. IMPLEMENT AUTHENTICATION MIDDLEWARE\n   • Validate authentication tokens on every request\n   • Return 401 Unauthorized for missing/invalid tokens\n\n2. ENFORCE ACCESS CONTROL\n   • Apply authentication consistently across all endpoints\n   • Use framework-level security controls\n\n3. SECURE BY DEFAULT\n   • Assume all endpoints require authentication unless explicitly public\n   • Conduct regular security reviews of authentication logic"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: POST /product-agreements\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: POST /product-agreements\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: POST /product-agreements\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: POST /product-agreements\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "AUTH-BYPASS-01",
+    "title" : "Missing Authentication Controls",
+    "description" : "\uD83D\uDEA8 CRITICAL: Data retrieval endpoint accessible without authentication.\n\n• Endpoint: GET /product-agreements\n• Expected: 401 Unauthorized for unauthenticated requests\n• Actual: 200 OK without authentication token\n• Impact: Attackers can access sensitive data/modify resources without authentication",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements",
+    "remediation" : "✅ CRITICAL REMEDIATION REQUIRED:\n\n1. IMPLEMENT AUTHENTICATION MIDDLEWARE\n   • Validate authentication tokens on every request\n   • Return 401 Unauthorized for missing/invalid tokens\n\n2. ENFORCE ACCESS CONTROL\n   • Apply authentication consistently across all endpoints\n   • Use framework-level security controls\n\n3. SECURE BY DEFAULT\n   • Assume all endpoints require authentication unless explicitly public\n   • Conduct regular security reviews of authentication logic"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: GET /product-agreements\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: GET /product-agreements\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: GET /product-agreements\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: GET /product-agreements\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreements",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "AUTH-BYPASS-01",
+    "title" : "Missing Authentication Controls",
+    "description" : "\uD83D\uDEA8 CRITICAL: Data retrieval endpoint accessible without authentication.\n\n• Endpoint: GET /product-agreement-consents/{consent_id}\n• Expected: 401 Unauthorized for unauthenticated requests\n• Actual: 200 OK without authentication token\n• Impact: Attackers can access sensitive data/modify resources without authentication",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreement-consents/{consent_id}",
+    "remediation" : "✅ CRITICAL REMEDIATION REQUIRED:\n\n1. IMPLEMENT AUTHENTICATION MIDDLEWARE\n   • Validate authentication tokens on every request\n   • Return 401 Unauthorized for missing/invalid tokens\n\n2. ENFORCE ACCESS CONTROL\n   • Apply authentication consistently across all endpoints\n   • Use framework-level security controls\n\n3. SECURE BY DEFAULT\n   • Assume all endpoints require authentication unless explicitly public\n   • Conduct regular security reviews of authentication logic"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: GET /product-agreement-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreement-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: GET /product-agreement-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreement-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: GET /product-agreement-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreement-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: GET /product-agreement-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreement-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "AUTH-BYPASS-01",
+    "title" : "Missing Authentication Controls",
+    "description" : "\uD83D\uDEA8 CRITICAL: Data retrieval endpoint accessible without authentication.\n\n• Endpoint: GET /accounts/{account_id}/balances\n• Expected: 401 Unauthorized for unauthenticated requests\n• Actual: 200 OK without authentication token\n• Impact: Attackers can access sensitive data/modify resources without authentication",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/balances",
+    "remediation" : "✅ CRITICAL REMEDIATION REQUIRED:\n\n1. IMPLEMENT AUTHENTICATION MIDDLEWARE\n   • Validate authentication tokens on every request\n   • Return 401 Unauthorized for missing/invalid tokens\n\n2. ENFORCE ACCESS CONTROL\n   • Apply authentication consistently across all endpoints\n   • Use framework-level security controls\n\n3. SECURE BY DEFAULT\n   • Assume all endpoints require authentication unless explicitly public\n   • Conduct regular security reviews of authentication logic"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: GET /accounts/{account_id}/balances\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/balances",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: GET /accounts/{account_id}/balances\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/balances",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: GET /accounts/{account_id}/balances\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/balances",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: GET /accounts/{account_id}/balances\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/balances",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "AUTH-BYPASS-01",
+    "title" : "Missing Authentication Controls",
+    "description" : "\uD83D\uDEA8 CRITICAL: Data retrieval endpoint accessible without authentication.\n\n• Endpoint: GET /accounts/{account_id}\n• Expected: 401 Unauthorized for unauthenticated requests\n• Actual: 200 OK without authentication token\n• Impact: Attackers can access sensitive data/modify resources without authentication",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}",
+    "remediation" : "✅ CRITICAL REMEDIATION REQUIRED:\n\n1. IMPLEMENT AUTHENTICATION MIDDLEWARE\n   • Validate authentication tokens on every request\n   • Return 401 Unauthorized for missing/invalid tokens\n\n2. ENFORCE ACCESS CONTROL\n   • Apply authentication consistently across all endpoints\n   • Use framework-level security controls\n\n3. SECURE BY DEFAULT\n   • Assume all endpoints require authentication unless explicitly public\n   • Conduct regular security reviews of authentication logic"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: GET /accounts/{account_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: GET /accounts/{account_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: GET /accounts/{account_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: GET /accounts/{account_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "AUTH-BYPASS-01",
+    "title" : "Missing Authentication Controls",
+    "description" : "\uD83D\uDEA8 CRITICAL: Data creation endpoint accessible without authentication.\n\n• Endpoint: POST /product-agreement-consents/request\n• Expected: 401 Unauthorized for unauthenticated requests\n• Actual: 200 OK without authentication token\n• Impact: Attackers can access sensitive data/modify resources without authentication",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreement-consents/request",
+    "remediation" : "✅ CRITICAL REMEDIATION REQUIRED:\n\n1. IMPLEMENT AUTHENTICATION MIDDLEWARE\n   • Validate authentication tokens on every request\n   • Return 401 Unauthorized for missing/invalid tokens\n\n2. ENFORCE ACCESS CONTROL\n   • Apply authentication consistently across all endpoints\n   • Use framework-level security controls\n\n3. SECURE BY DEFAULT\n   • Assume all endpoints require authentication unless explicitly public\n   • Conduct regular security reviews of authentication logic"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: POST /product-agreement-consents/request\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreement-consents/request",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: POST /product-agreement-consents/request\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreement-consents/request",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: POST /product-agreement-consents/request\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreement-consents/request",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: POST /product-agreement-consents/request\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/product-agreement-consents/request",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "AUTH-BYPASS-01",
+    "title" : "Missing Authentication Controls",
+    "description" : "\uD83D\uDEA8 CRITICAL: Data deletion endpoint accessible without authentication.\n\n• Endpoint: DELETE /payment-consents/{consent_id}\n• Expected: 401 Unauthorized for unauthenticated requests\n• Actual: 200 OK without authentication token\n• Impact: Attackers can access sensitive data/modify resources without authentication",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payment-consents/{consent_id}",
+    "remediation" : "✅ CRITICAL REMEDIATION REQUIRED:\n\n1. IMPLEMENT AUTHENTICATION MIDDLEWARE\n   • Validate authentication tokens on every request\n   • Return 401 Unauthorized for missing/invalid tokens\n\n2. ENFORCE ACCESS CONTROL\n   • Apply authentication consistently across all endpoints\n   • Use framework-level security controls\n\n3. SECURE BY DEFAULT\n   • Assume all endpoints require authentication unless explicitly public\n   • Conduct regular security reviews of authentication logic"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: DELETE /payment-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payment-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: DELETE /payment-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payment-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: DELETE /payment-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payment-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: DELETE /payment-consents/{consent_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payment-consents/{consent_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "AUTH-BYPASS-01",
+    "title" : "Missing Authentication Controls",
+    "description" : "\uD83D\uDEA8 CRITICAL: Data creation endpoint accessible without authentication.\n\n• Endpoint: POST /payments\n• Expected: 401 Unauthorized for unauthenticated requests\n• Actual: 200 OK without authentication token\n• Impact: Attackers can access sensitive data/modify resources without authentication",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payments",
+    "remediation" : "✅ CRITICAL REMEDIATION REQUIRED:\n\n1. IMPLEMENT AUTHENTICATION MIDDLEWARE\n   • Validate authentication tokens on every request\n   • Return 401 Unauthorized for missing/invalid tokens\n\n2. ENFORCE ACCESS CONTROL\n   • Apply authentication consistently across all endpoints\n   • Use framework-level security controls\n\n3. SECURE BY DEFAULT\n   • Assume all endpoints require authentication unless explicitly public\n   • Conduct regular security reviews of authentication logic"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: POST /payments\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payments",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: POST /payments\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payments",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: POST /payments\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payments",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: POST /payments\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payments",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "AUTH-BYPASS-01",
+    "title" : "Missing Authentication Controls",
+    "description" : "\uD83D\uDEA8 CRITICAL: Data update endpoint accessible without authentication.\n\n• Endpoint: PUT /accounts/{account_id}/status\n• Expected: 401 Unauthorized for unauthenticated requests\n• Actual: 200 OK without authentication token\n• Impact: Attackers can access sensitive data/modify resources without authentication",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/status",
+    "remediation" : "✅ CRITICAL REMEDIATION REQUIRED:\n\n1. IMPLEMENT AUTHENTICATION MIDDLEWARE\n   • Validate authentication tokens on every request\n   • Return 401 Unauthorized for missing/invalid tokens\n\n2. ENFORCE ACCESS CONTROL\n   • Apply authentication consistently across all endpoints\n   • Use framework-level security controls\n\n3. SECURE BY DEFAULT\n   • Assume all endpoints require authentication unless explicitly public\n   • Conduct regular security reviews of authentication logic"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: PUT /accounts/{account_id}/status\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/status",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: PUT /accounts/{account_id}/status\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/status",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: PUT /accounts/{account_id}/status\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/status",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: PUT /accounts/{account_id}/status\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/accounts/{account_id}/status",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "AUTH-BYPASS-01",
+    "title" : "Missing Authentication Controls",
+    "description" : "\uD83D\uDEA8 CRITICAL: Data retrieval endpoint accessible without authentication.\n\n• Endpoint: GET /payments/{payment_id}\n• Expected: 401 Unauthorized for unauthenticated requests\n• Actual: 200 OK without authentication token\n• Impact: Attackers can access sensitive data/modify resources without authentication",
+    "severity" : "HIGH",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payments/{payment_id}",
+    "remediation" : "✅ CRITICAL REMEDIATION REQUIRED:\n\n1. IMPLEMENT AUTHENTICATION MIDDLEWARE\n   • Validate authentication tokens on every request\n   • Return 401 Unauthorized for missing/invalid tokens\n\n2. ENFORCE ACCESS CONTROL\n   • Apply authentication consistently across all endpoints\n   • Use framework-level security controls\n\n3. SECURE BY DEFAULT\n   • Assume all endpoints require authentication unless explicitly public\n   • Conduct regular security reviews of authentication logic"
+  }, {
+    "id" : "TOKEN-EMPTY-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Empty token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Empty token accepted\n• Endpoint: GET /payments/{payment_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payments/{payment_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-INVALID-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Malformed token accepted - Authentication token validation is weak or missing\n\n• Vulnerability: Malformed token accepted\n• Endpoint: GET /payments/{payment_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payments/{payment_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-URL-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Token accepted in URL parameters - Authentication token validation is weak or missing\n\n• Vulnerability: Token accepted in URL parameters\n• Endpoint: GET /payments/{payment_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payments/{payment_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
+  }, {
+    "id" : "TOKEN-MISSING-01",
+    "title" : "Token Validation Vulnerability",
+    "description" : "\uD83D\uDD10 Request accepted without any authentication headers - Authentication token validation is weak or missing\n\n• Vulnerability: Request accepted without any authentication headers\n• Endpoint: GET /payments/{payment_id}\n• Impact: Potential unauthorized access through token manipulation",
+    "severity" : "MEDIUM",
+    "testCaseId" : "ASTF-API2-2023",
+    "endpoint" : "https://vbank.open.bankingapi.ru/payments/{payment_id}",
+    "remediation" : "✅ IMPROVE TOKEN VALIDATION:\n\n1. STRICT TOKEN VALIDATION\n   • Reject empty, malformed, or invalid tokens\n   • Validate token signature and expiration\n\n2. SECURE TOKEN HANDLING\n   • Never accept tokens in URL parameters\n   • Use Authorization header exclusively\n   • Implement proper token revocation\n\n3. DEFENSE IN DEPTH\n   • Log authentication attempts\n   • Monitor for suspicious token usage\n   • Regular security testing of authentication flows"
   }, {
     "id" : "RL-INFO-01",
     "title" : "Rate Limit Protection Verified",
@@ -172,149 +1180,5 @@
     "testCaseId" : "RATE-LIMIT-BYPASS",
     "endpoint" : "https://vbank.open.bankingapi.ru/auth/bank-token",
     "remediation" : "✅ СИСТЕМА ЗАЩИЩЕНА ОТ ОСНОВНЫХ АТАК НА РЕЙТ-ЛИМИТЫ:\n\n• Реализована эффективная защита от быстрых последовательных запросов\n• Рейт-лимитинг корректно работает на публичных эндпоинтах\n• Система устойчива к базовым методам обхода (User-Agent rotation, IP spoofing)\n\n\uD83D\uDCA1 РЕКОМЕНДАЦИИ ДЛЯ ДАЛЬНЕЙШЕГО УЛУЧШЕНИЯ:\n• Регулярно мониторить паттерны запросов на предмет сложных атак\n• Рассмотреть внедрение ML-based систем обнаружения аномалий\n• Тестировать рейт-лимиты в продакшн-среде с реалистичной нагрузкой"
-  }, {
-    "id" : "da907f17-dd5b-4e0e-b323-c13f157908fc",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "GET /accounts/{account_id}/transactions",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "8b5e89e7-6ee3-4d1d-96db-2d24697c13ab",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "PUT /accounts/{account_id}/close",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "efb52e80-3daa-4537-80d1-20691c4133f2",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "DELETE /product-agreements/{agreement_id}",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "1339d203-23f9-444b-801c-26b78be0916f",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "PUT /accounts/{account_id}/status",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "89071ab3-c6c5-4625-a4fb-5a0c234e4974",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "POST /payments",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "57fab469-6a76-4c3e-a9cf-22da0f795f00",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "POST /product-agreements",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "678543f9-1781-4c36-8e08-d4987a424a8b",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "DELETE /product-agreement-consents/{consent_id}",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "fb311068-e5e5-4301-88fd-5bc0eb4961c9",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "POST /accounts",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "95b40f53-7292-4215-9dd8-df0db0effb9f",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "POST /product-agreement-consents/request",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "95a6083d-6b5f-463a-a419-f2042b18ba9b",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "DELETE /payment-consents/{consent_id}",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "c4e96d22-ee95-412a-80ab-247fb50c27da",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "GET /product-agreement-consents/{consent_id}",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "b72ff2a6-bbff-4cd2-9751-a3c3ca561b6b",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "GET /product-agreements",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "10be6158-aa8c-43e3-a610-dfe3e2f4cd2b",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "GET /accounts/{account_id}/balances",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "b93759b8-4d39-4af2-9d5f-a1db4fd5d9e4",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "GET /payments/{payment_id}",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "514ab8ca-ab06-44ec-935a-7a6763196783",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "GET /product-agreements/{agreement_id}",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "2d8463ca-dc9b-452a-9561-8199e5b98f3b",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "GET /accounts/{account_id}",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "94012e78-8f08-4535-b828-0cf22d43b591",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "GET /accounts",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
-  }, {
-    "id" : "a22882f0-9778-4278-a95f-3b541ce5eb18",
-    "title" : "Missing Authentication Controls",
-    "description" : "The API endpoint appears to be accessible without proper authentication.",
-    "severity" : "HIGH",
-    "testCaseId" : "ASTF-API2-2023",
-    "endpoint" : "GET /payment-consents/{consent_id}",
-    "remediation" : "Implement consistent authentication checks across all API endpoints that require them."
   } ]
 }

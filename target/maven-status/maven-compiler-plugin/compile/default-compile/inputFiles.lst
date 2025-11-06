@@ -23,6 +23,7 @@ C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\j
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\integrations\providers\github\GitHubActionsConfigAdapter.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\integrations\security\SecurityConfiguration.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\openapi\OpenApiLoader.java
+C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\testcases\validation\AuthenticationValidator.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\core\result\Finding.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\core\config\ConfigLoader.java
 C:\Users\user\Desktop\www-project-api-security-testing-framework-main\src\main\java\org\owasp\astf\core\result\ScanResult.java
