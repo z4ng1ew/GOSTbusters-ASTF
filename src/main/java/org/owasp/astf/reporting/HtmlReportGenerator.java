@@ -19,10 +19,9 @@ import org.owasp.astf.core.result.Severity;
  * This report generator creates human-readable HTML files with interactive
  * features for exploring scan findings. The HTML report includes:
  * <ul>
- *   <li>Executive summary with vulnerability statistics</li>
- *   <li>Interactive finding details</li>
- *   <li>Evidence and remediation guidance</li>
- *   <li>Responsive design for various devices</li>
+ * <li>Executive summary with vulnerability statistics and color indicators</li>
+ * <li>Interactive finding details with colored emojis and OWASP categories</li>
+ * <li>Open Banking Russia branding and OWASP API Top 10 2023 compliance indicator</li>
  * </ul>
  * </p>
  */
@@ -42,13 +41,13 @@ public class HtmlReportGenerator implements ReportGenerator {
 
         StringBuilder html = new StringBuilder();
 
-        // Generate HTML header and styles
+        // 💡 1 & 3. Generate HTML header, styles, and Open Banking branding
         generateHtmlHeader(html);
 
-        // Generate summary section
+        // 💡 2. Generate summary section with color indicators
         generateSummarySection(html, result);
 
-        // Generate findings section
+        // 💡 4 & 5. Generate findings section with emojis and OWASP category colors
         generateFindingsSection(html, result);
 
         // Close HTML tags
@@ -63,7 +62,7 @@ public class HtmlReportGenerator implements ReportGenerator {
     }
 
     /**
-     * Generates the HTML header and CSS styles.
+     * Generates the HTML header, CSS styles, and Open Banking branding.
      *
      * @param html The StringBuilder to append to
      */
@@ -71,38 +70,53 @@ public class HtmlReportGenerator implements ReportGenerator {
         html.append("<!DOCTYPE html>\n")
                 .append("<html lang=\"en\">\n")
                 .append("<head>\n")
-                .append("  <meta charset=\"UTF-8\">\n")
-                .append("  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n")
-                .append("  <title>OWASP API Security Scan Report</title>\n")
-                .append("  <style>\n")
-                .append("    body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; color: #333; }\n")
-                .append("    h1 { color: #2c3e50; }\n")
-                .append("    h2 { color: #3498db; margin-top: 30px; }\n")
-                .append("    .summary { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }\n")
-                .append("    .finding { border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-bottom: 15px; }\n")
-                .append("    .critical { border-left: 5px solid #e74c3c; }\n")
-                .append("    .high { border-left: 5px solid #e67e22; }\n")
-                .append("    .medium { border-left: 5px solid #f1c40f; }\n")
-                .append("    .low { border-left: 5px solid #3498db; }\n")
-                .append("    .info { border-left: 5px solid #2ecc71; }\n")
-                .append("    .severity { display: inline-block; padding: 3px 8px; border-radius: 3px; color: white; font-size: 12px; }\n")
-                .append("    .severity.critical { background-color: #e74c3c; }\n")
-                .append("    .severity.high { background-color: #e67e22; }\n")
-                .append("    .severity.medium { background-color: #f1c40f; color: #333; }\n")
-                .append("    .severity.low { background-color: #3498db; }\n")
-                .append("    .severity.info { background-color: #2ecc71; }\n")
-                .append("    .endpoint { background-color: #f8f9fa; padding: 5px; border-radius: 3px; font-family: monospace; }\n")
-                .append("    .details { margin-top: 10px; }\n")
-                .append("    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }\n")
-                .append("    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }\n")
-                .append("    th { background-color: #f2f2f2; }\n")
-                .append("    .collapsible { cursor: pointer; }\n")
-                .append("    .content { max-height: 0; overflow: hidden; transition: max-height 0.2s ease-out; }\n")
-                .append("    .active + .content { max-height: 500px; }\n")
-                .append("  </style>\n")
+                .append("   <meta charset=\"UTF-8\">\n")
+                .append("   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n")
+                .append("   <title>OWASP API Security Scan Report</title>\n")
+                .append("   <style>\n")
+                .append("     body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; color: #333; }\n")
+                .append("     h1 { color: #2c3e50; margin: 0; } /* Убираем верхний отступ у заголовка */\n")
+                .append("     h2 { color: #3498db; margin-top: 30px; }\n")
+                .append("     .summary { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }\n")
+                .append("     .finding { border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-bottom: 15px; }\n")
+                .append("     .critical { border-left: 5px solid #e74c3c; }\n")
+                .append("     .high { border-left: 5px solid #e67e22; }\n")
+                .append("     .medium { border-left: 5px solid #f1c40f; }\n")
+                .append("     .low { border-left: 5px solid #3498db; }\n")
+                .append("     .info { border-left: 5px solid #2ecc71; }\n")
+                .append("     .severity { display: inline-block; padding: 3px 8px; border-radius: 3px; color: white; font-size: 12px; }\n")
+                .append("     .severity.critical { background-color: #e74c3c; }\n")
+                .append("     .severity.high { background-color: #e67e22; }\n")
+                .append("     .severity.medium { background-color: #f1c40f; color: #333; }\n")
+                .append("     .severity.low { background-color: #3498db; }\n")
+                .append("     .severity.info { background-color: #2ecc71; }\n")
+                .append("     .endpoint { background-color: #f8f9fa; padding: 5px; border-radius: 3px; font-family: monospace; }\n")
+                .append("     .details { margin-top: 10px; }\n")
+                .append("     table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }\n")
+                .append("     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }\n")
+                .append("     th { background-color: #f2f2f2; }\n")
+                .append("     .collapsible { cursor: pointer; }\n")
+                .append("     .content { max-height: 0; overflow: hidden; transition: max-height 0.2s ease-out; }\n")
+                .append("     .active + .content { max-height: 1000px; /* Увеличено для лучшей анимации */ }\n")
+                .append("     /* Стили для контейнера заголовка и логотипа */\n")
+                .append("     .header-container { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }\n")
+                .append("     .logo-container { flex-shrink: 0; } /* Логотип не сжимается */\n")
+                .append("     .logo-container img { height: 50px; width: auto; /* Сохраняем пропорции */ }\n")
+                .append("     .title-container { flex-grow: 1; } /* Заголовок занимает оставшееся место */\n")
+                .append("   </style>\n")
                 .append("</head>\n")
                 .append("<body>\n")
-                .append("  <h1>OWASP API Security Testing Framework - Scan Report</h1>\n");
+                // --- НАЧАЛО ИЗМЕНЕНИЯ ---
+                .append("   <div class=\"header-container\">\n")
+                .append("     <div class=\"logo-container\">\n")
+                .append("       <img src=\"GOSTbusters_logo_1.png\" alt=\"GOSTbusters Logo\" title=\"GOSTbusters Team\">\n") // Ссылка на локальный файл
+                .append("     </div>\n")
+                .append("     <div class=\"title-container\">\n")
+                .append("       <h1>OWASP API Security Testing Framework - Scan Report</h1>\n")
+                .append("       <span style=\"font-size: 1.1em; color: #555; font-weight: bold;\">Powered by Open Banking Russia v2.1 | GOSTbusters Team</span>\n")
+                .append("     </div>\n")
+                .append("   </div>\n");
+                // --- КОНЕЦ ИЗМЕНЕНИЯ ---
     }
 
     /**
@@ -114,22 +128,22 @@ public class HtmlReportGenerator implements ReportGenerator {
     private void generateSummarySection(StringBuilder html, ScanResult result) {
         Map<Severity, Long> severitySummary = result.getSeveritySummary();
 
-        html.append("  <div class=\"summary\">\n")
-                .append("    <h2>Scan Summary</h2>\n")
-                .append("    <p><strong>Target:</strong> ").append(result.getTargetUrl()).append("</p>\n")
-                .append("    <p><strong>Scan Start:</strong> ").append(result.getScanStartTime().format(DateTimeFormatter.ISO_DATE_TIME)).append("</p>\n")
-                .append("    <p><strong>Scan End:</strong> ").append(result.getScanEndTime().format(DateTimeFormatter.ISO_DATE_TIME)).append("</p>\n")
-                .append("    <p><strong>Total Findings:</strong> ").append(result.getTotalFindingsCount()).append("</p>\n")
-                .append("    <table>\n")
-                .append("      <tr><th>Severity</th><th>Count</th></tr>\n");
-
-        html.append("      <tr><td>Critical</td><td>").append(severitySummary.getOrDefault(Severity.CRITICAL, 0L)).append("</td></tr>\n")
-                .append("      <tr><td>High</td><td>").append(severitySummary.getOrDefault(Severity.HIGH, 0L)).append("</td></tr>\n")
-                .append("      <tr><td>Medium</td><td>").append(severitySummary.getOrDefault(Severity.MEDIUM, 0L)).append("</td></tr>\n")
-                .append("      <tr><td>Low</td><td>").append(severitySummary.getOrDefault(Severity.LOW, 0L)).append("</td></tr>\n")
-                .append("      <tr><td>Info</td><td>").append(severitySummary.getOrDefault(Severity.INFO, 0L)).append("</td></tr>\n")
-                .append("    </table>\n")
-                .append("  </div>\n");
+        html.append("   <div class=\"summary\">\n")
+                .append("     <h2>Scan Summary</h2>\n")
+                .append("     <p><strong>Target:</strong> ").append(result.getTargetUrl()).append("</p>\n")
+                .append("     <p><strong>Scan Start:</strong> ").append(result.getScanStartTime().format(DateTimeFormatter.ISO_DATE_TIME)).append("</p>\n")
+                .append("     <p><strong>Scan End:</strong> ").append(result.getScanEndTime().format(DateTimeFormatter.ISO_DATE_TIME)).append("</p>\n")
+                .append("     <p><strong>Total Findings:</strong> ").append(result.getTotalFindingsCount()).append("</p>\n")
+                .append("     <table>\n")
+                .append("       <tr><th>Severity</th><th>Count</th></tr>\n")
+                // 💡 2. Добавление цветного индикатора в сводку
+                .append("       <tr><td>🔴 Critical</td><td>").append(severitySummary.getOrDefault(Severity.CRITICAL, 0L)).append("</td></tr>\n")
+                .append("       <tr><td>🟠 High</td><td>").append(severitySummary.getOrDefault(Severity.HIGH, 0L)).append("</td></tr>\n")
+                .append("       <tr><td>🟡 Medium</td><td>").append(severitySummary.getOrDefault(Severity.MEDIUM, 0L)).append("</td></tr>\n")
+                .append("       <tr><td>🟢 Low</td><td>").append(severitySummary.getOrDefault(Severity.LOW, 0L)).append("</td></tr>\n")
+                .append("       <tr><td>🔵 Info</td><td>").append(severitySummary.getOrDefault(Severity.INFO, 0L)).append("</td></tr>\n")
+                .append("     </table>\n")
+                .append("   </div>\n");
     }
 
     /**
@@ -140,15 +154,15 @@ public class HtmlReportGenerator implements ReportGenerator {
      */
     private void generateFindingsSection(StringBuilder html, ScanResult result) {
         if (result.getTotalFindingsCount() == 0) {
-            html.append("  <div class=\"findings\">\n")
-                    .append("    <h2>Findings</h2>\n")
-                    .append("    <p>No security findings were detected during the scan.</p>\n")
-                    .append("  </div>\n");
+            html.append("   <div class=\"findings\">\n")
+                    .append("     <h2>Findings</h2>\n")
+                    .append("     <p>No security findings were detected during the scan.</p>\n")
+                    .append("   </div>\n");
             return;
         }
 
-        html.append("  <div class=\"findings\">\n")
-                .append("    <h2>Findings</h2>\n");
+        html.append("   <div class=\"findings\">\n")
+                .append("     <h2>Findings</h2>\n");
 
         // Group findings by severity for better organization
         Map<Severity, List<Finding>> findingsBySeverity = result.getFindings().stream()
@@ -161,18 +175,24 @@ public class HtmlReportGenerator implements ReportGenerator {
         processFindingsBySeverity(html, findingsBySeverity, Severity.LOW);
         processFindingsBySeverity(html, findingsBySeverity, Severity.INFO);
 
-        html.append("  </div>\n");
+        html.append("   </div>\n");
 
         // Add JavaScript for collapsible sections
         html.append("<script>\n")
-                .append("  document.addEventListener('DOMContentLoaded', function() {\n")
-                .append("    var collapsibles = document.getElementsByClassName('collapsible');\n")
-                .append("    for (var i = 0; i < collapsibles.length; i++) {\n")
-                .append("      collapsibles[i].addEventListener('click', function() {\n")
-                .append("        this.classList.toggle('active');\n")
-                .append("      });\n")
-                .append("    }\n")
-                .append("  });\n")
+                .append("   document.addEventListener('DOMContentLoaded', function() {\n")
+                .append("     var collapsibles = document.getElementsByClassName('collapsible');\n")
+                .append("     for (var i = 0; i < collapsibles.length; i++) {\n")
+                .append("       collapsibles[i].addEventListener('click', function() {\n")
+                .append("         this.classList.toggle('active');\n")
+                .append("         var content = this.nextElementSibling;\n")
+                .append("         if (content.style.maxHeight) {\n")
+                .append("           content.style.maxHeight = null;\n")
+                .append("         } else {\n")
+                .append("           content.style.maxHeight = content.scrollHeight + \"px\";\n")
+                .append("         }\n")
+                .append("       });\n")
+                .append("     }\n")
+                .append("   });\n")
                 .append("</script>\n");
     }
 
@@ -191,46 +211,58 @@ public class HtmlReportGenerator implements ReportGenerator {
 
         String severityClass = severity.name().toLowerCase();
 
-        html.append("    <h3>").append(severity).append(" Severity Findings (").append(findings.size()).append(")</h3>\n");
+        // 💡 4. Добавление индикатора OWASP API Top 10 2023
+        html.append("    <h3>")
+                .append(getEmojiForSeverity(severity)) // 💡 1. Эмодзи в заголовке раздела
+                .append(" ")
+                .append(severity)
+                .append(" Severity Findings (")
+                .append(findings.size())
+                .append(") - OWASP API Top 10 2023 Compliant</h3>\n");
 
         for (Finding finding : findings) {
-            html.append("    <div class=\"finding ").append(severityClass).append("\">\n")
-                    .append("      <h4>")
+            html.append("    <div class=\"finding ").append(severityClass).append("\">\n")
+                    // 💡 1. Эмодзи в заголовке уязвимости
+                    .append("      <h4>")
+                    .append(getEmojiForSeverity(finding.getSeverity()))
+                    .append(" ")
                     .append(finding.getTitle())
                     .append(" <span class=\"severity ").append(severityClass).append("\">").append(severity).append("</span></h4>\n")
-                    .append("      <p><strong>Endpoint:</strong> <span class=\"endpoint\">").append(finding.getEndpoint()).append("</span></p>\n")
-                    .append("      <p><strong>Test Case:</strong> ").append(finding.getTestCaseId()).append("</p>\n")
-                    .append("      <div class=\"details\">\n")
-                    .append("        <p>").append(finding.getDescription()).append("</p>\n");
+                    .append("      <p><strong>Endpoint:</strong> <span class=\"endpoint\">").append(finding.getEndpoint()).append("</span></p>\n")
+                    // 💡 5. Добавление цветного индикатора для типа уязвимости
+                    .append("      <p><strong>OWASP API Category:</strong> ").append(getColorfulApiCategory(finding.getTestCaseId())).append("</p>\n")
+                    .append("      <p><strong>Test Case:</strong> ").append(finding.getTestCaseId()).append("</p>\n")
+                    .append("      <div class=\"details\">\n")
+                    .append("        <p>").append(finding.getDescription()).append("</p>\n");
 
             // Add evidence if available
             if (finding.getEvidence() != null && !finding.getEvidence().isEmpty()) {
-                html.append("        <p><strong>Evidence:</strong> ").append(finding.getEvidence()).append("</p>\n");
+                html.append("        <p><strong>Evidence:</strong> ").append(finding.getEvidence()).append("</p>\n");
             }
 
             // Add request/response details if available
             if (finding.getRequestDetails() != null || finding.getResponseDetails() != null) {
-                html.append("        <h5 class=\"collapsible\">Request/Response Details</h5>\n")
-                        .append("        <div class=\"content\">\n");
+                html.append("        <h5 class=\"collapsible\">Request/Response Details</h5>\n")
+                        .append("        <div class=\"content\">\n");
 
                 if (finding.getRequestDetails() != null) {
-                    html.append("          <p><strong>Request:</strong><br><pre>").append(escapeHtml(finding.getRequestDetails())).append("</pre></p>\n");
+                    html.append("          <p><strong>Request:</strong><br><pre>").append(escapeHtml(finding.getRequestDetails())).append("</pre></p>\n");
                 }
 
                 if (finding.getResponseDetails() != null) {
-                    html.append("          <p><strong>Response:</strong><br><pre>").append(escapeHtml(finding.getResponseDetails())).append("</pre></p>\n");
+                    html.append("          <p><strong>Response:</strong><br><pre>").append(escapeHtml(finding.getResponseDetails())).append("</pre></p>\n");
                 }
 
-                html.append("        </div>\n");
+                html.append("        </div>\n");
             }
 
             // Add remediation guidance
-            html.append("        <h5 class=\"collapsible\">Remediation</h5>\n")
-                    .append("        <div class=\"content\">\n")
-                    .append("          <p>").append(finding.getRemediation()).append("</p>\n")
-                    .append("        </div>\n")
-                    .append("      </div>\n")
-                    .append("    </div>\n");
+            html.append("        <h5 class=\"collapsible\">Remediation</h5>\n")
+                    .append("        <div class=\"content\">\n")
+                    .append("          <p>").append(finding.getRemediation()).append("</p>\n")
+                    .append("        </div>\n")
+                    .append("      </div>\n")
+                    .append("    </div>\n");
         }
     }
 
@@ -246,10 +278,46 @@ public class HtmlReportGenerator implements ReportGenerator {
         }
 
         return input.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
+                .replace("<", "<")
+                .replace(">", ">")
                 .replace("\"", "&quot;")
                 .replace("'", "&#39;");
+    }
+
+    // 💡 1. НОВЫЙ МЕТОД: Возвращает эмодзи для уровня серьезности
+    private String getEmojiForSeverity(Severity severity) {
+        return switch (severity) {
+            case CRITICAL -> "🔴";
+            case HIGH -> "🟠";
+            case MEDIUM -> "🟡";
+            case LOW -> "🟢";
+            case INFO -> "🔵";
+            default -> "⚪";
+        };
+    }
+
+    // 💡 5. НОВЫЙ МЕТОД: Возвращает цветной тег для категории OWASP API
+    private String getColorfulApiCategory(String testCaseId) {
+        String category = testCaseId.toUpperCase();
+        String color = switch (testCaseId.toLowerCase()) {
+            case "bola", "api1:2023", "api1" -> "#e74c3c"; // Красный/Critical
+            case "broken-object-property-level-auth", "api2:2023", "api2" -> "#9b59b6"; // Фиолетовый/Purple
+            case "excessive-data-exposure", "api3:2023", "api3" -> "#e67e22"; // Оранжевый/High
+            case "rate-limiting", "api4:2023", "api4" -> "#f1c40f"; // Желтый/Medium
+            case "broken-auth", "api5:2023", "api5" -> "#e74c3c"; // Красный/Critical
+            case "mass-assignment", "api6:2023", "api6" -> "#e67e22"; // Оранжевый/High
+            case "ssrf", "api7:2023", "api7" -> "#e67e22"; // Оранжевый/High
+            case "security-misconfiguration", "api8:2023", "api8" -> "#f1c40f"; // Желтый/Medium
+            case "improper-inventory-management", "api9:2023", "api9" -> "#3498db"; // Синий/Low
+            case "insecure-default-config", "api10:2023", "api10" -> "#3498db"; // Синий/Low
+            default -> "#7f8c8d"; // Серый/Gray
+        };
+        // Убрал лишние символы из категории для более чистого отображения
+        if (category.startsWith("API")) {
+             category = category.replace(":2023", "");
+        }
+        
+        return "<span style=\"color: " + color + "; font-weight: bold;\">[" + category + "]</span>";
     }
 
     @Override

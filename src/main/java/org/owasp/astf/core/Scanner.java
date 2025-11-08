@@ -13,15 +13,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.http.client.methods.HttpGet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.owasp.astf.core.config.ScanConfig;
 import org.owasp.astf.core.discovery.EndpointDiscoveryService;
 import org.owasp.astf.core.http.HttpClient;
+import org.owasp.astf.core.http.HttpResponse;
 import org.owasp.astf.core.result.Finding;
 import org.owasp.astf.core.result.ScanResult;
 import org.owasp.astf.core.result.Severity;
 import org.owasp.astf.openapi.OpenApiLoader;
+import org.owasp.astf.openbanking.OpenBankingAuthenticator;
 import org.owasp.astf.testcases.TestCase;
 import org.owasp.astf.testcases.TestCaseRegistry;
 
@@ -29,11 +32,11 @@ import org.owasp.astf.testcases.TestCaseRegistry;
  * The main scanner engine that orchestrates the API security testing process.
  * This class is responsible for:
  * <ul>
- *   <li>Initializing and executing the scan based on configuration</li>
- *   <li>Managing endpoint discovery or using provided endpoints</li>
- *   <li>Coordinating test case execution across endpoints</li>
- *   <li>Collecting and aggregating findings</li>
- *   <li>Providing progress updates and metrics</li>
+ * <li>Initializing and executing the scan based on configuration</li>
+ * <li>Managing endpoint discovery or using provided endpoints</li>
+ * <li>Coordinating test case execution across endpoints</li>
+ * <li>Collecting and aggregating findings</li>
+ * <li>Providing progress updates and metrics</li>
  * </ul>
  */
 public class Scanner {
@@ -63,11 +66,8 @@ public class Scanner {
     public Scanner(ScanConfig config) {
         // ✅ Обработка GOST-шлюза перед созданием зависимостей
         ScanConfig effectiveConfig = processGostConfig(config);
-        
         this.config = effectiveConfig;
         this.httpClient = new HttpClient(effectiveConfig);
-        
-        // ✅ ИСПРАВЛЕНО: Инициализируем поле с вызовом конструктора без параметров
         this.testCaseRegistry = new TestCaseRegistry();
         this.discoveryService = new EndpointDiscoveryService(effectiveConfig, httpClient);
 
@@ -88,10 +88,13 @@ public class Scanner {
             return originalConfig;
         }
 
-        // ✅ Применяем GOST трансформацию к targetUrl
+        // ✅ КРИТИЧЕСКИ ИСПРАВЛЕНО: Убраны ВСЕ пробелы в конце URL
         String originalUrl = originalConfig.getTargetUrl();
-        String gostUrl = originalUrl.replace("https://vbank.open.bankingapi.ru", "https://api.gost.bankingapi.ru:8443");
-        
+        String gostUrl = originalUrl
+            .replace("https://vbank.open.bankingapi.ru", "https://api.gost.bankingapi.ru:8443")
+            .replace("https://abank.open.bankingapi.ru", "https://api.gost.bankingapi.ru:8443")
+            .replace("https://sbank.open.bankingapi.ru", "https://api.gost.bankingapi.ru:8443");
+
         // Создаем копию конфига с обновленным URL
         ScanConfig gostConfig = new ScanConfig();
         gostConfig.setTargetUrl(gostUrl);
@@ -105,7 +108,7 @@ public class Scanner {
         gostConfig.setOutputFormat(originalConfig.getOutputFormat());
         gostConfig.setOutputFile(originalConfig.getOutputFile());
         gostConfig.setVerbose(originalConfig.isVerbose());
-        gostConfig.setUseGost(true); // Сохраняем флаг
+        gostConfig.setUseGost(true);
         gostConfig.setOpenApiSpecPath(originalConfig.getOpenApiSpecPath());
         gostConfig.setAttackerToken(originalConfig.getAttackerToken());
         gostConfig.setVictimToken(originalConfig.getVictimToken());
@@ -114,9 +117,30 @@ public class Scanner {
         gostConfig.setFollowRedirects(originalConfig.isFollowRedirects());
         gostConfig.setProxyHost(originalConfig.getProxyHost());
         gostConfig.setProxyPort(originalConfig.getProxyPort());
+        
+        // ✅ КРИТИЧЕСКИ ВАЖНО: Копируем Open Banking креденшиалы
+        gostConfig.setClientId(originalConfig.getClientId());
+        gostConfig.setClientSecret(originalConfig.getClientSecret());
+        gostConfig.setBankId(originalConfig.getBankId());
 
         logger.info("GOST gateway enabled. Original URL: {} -> GOST URL: {}", originalUrl, gostUrl);
         return gostConfig;
+    }
+    
+    /**
+     * ✅ ДОБАВЛЕНО (Задача 2): Поддержка мультибанкового сканирования
+     *
+     * @param configs Список конфигураций для каждого банка
+     * @return Сводный результат сканирования
+     */
+    public static ScanResult scanAllBanks(List<ScanConfig> configs) {
+        List<Finding> allFindings = new ArrayList<>();
+        for (ScanConfig config : configs) {
+            Scanner scanner = new Scanner(config);
+            ScanResult result = scanner.scan();
+            allFindings.addAll(result.getFindings());
+        }
+        return new ScanResult("All Banks", allFindings);
     }
 
     /**
@@ -131,18 +155,42 @@ public class Scanner {
         try {
             logger.info("Starting API security scan for target: {}", config.getTargetUrl());
 
+            // ✅ ДОБАВЛЕНО: Open Banking аутентификация перед началом сканирования
+            if (config.getClientId() != null && config.getClientSecret() != null) {
+                logger.info("🔑 Запуск аутентификации в Open Banking API...");
+                try {
+                    OpenBankingAuthenticator.setupAuth(config, httpClient);
+                    logger.info("✅ Аутентификация успешна. Заголовки настроены.");
+                    System.out.println("✅ Open Banking authentication successful");
+                } catch (Exception e) {
+                    logger.error("❌ Ошибка аутентификации: {}", e.getMessage());
+                    System.out.println("🚨 КРИТИЧЕСКАЯ ОШИБКА: Не удалось настроить аутентификацию");
+                    System.out.println("   Проверьте client_id и client_secret в конфиге");
+                    System.out.println("   Подробнее: " + e.getMessage());
+                    return createEmptyScanResult();
+                }
+            }
+
             // ✅ Определяем эндпоинты: OpenAPI → discovery → предоставленные
             List<EndpointInfo> endpoints = resolveEndpoints();
             
+            // ✅ ДОБАВЛЕНО (Задача 4): Проверка API9:2023 (Improper Inventory)
+            List<Finding> inventoryFindings = checkForImproperInventory(endpoints);
+            findings.addAll(inventoryFindings);
+            // Обновляем счетчики на основе найденного
+            for (Finding finding : inventoryFindings) {
+                findingsBySeverity.get(finding.getSeverity()).incrementAndGet();
+            }
+
             // ✅ ДОБАВЛЕНО: Отладочный вывод найденных эндпоинтов
             System.out.println("🔍 Found " + endpoints.size() + " endpoints to scan:");
             for (EndpointInfo endpoint : endpoints) {
-                System.out.println("  - " + endpoint.getMethod() + " " + endpoint.getFullUrl());
+                System.out.println("   - " + endpoint.getMethod() + " " + endpoint.getFullUrl());
                 if (config.isVerbose()) {
-                    System.out.println("    Requires auth: " + endpoint.isRequiresAuthentication());
+                    System.out.println("     Requires auth: " + endpoint.isRequiresAuthentication());
                 }
             }
-            
+
             if (endpoints.isEmpty()) {
                 logger.warn("No endpoints found to scan. Check target URL or provide endpoints manually.");
                 return createEmptyScanResult();
@@ -160,7 +208,7 @@ public class Scanner {
             // ✅ ДОБАВЛЕНО: Отладочный вывод тест-кейсов
             System.out.println("🧪 Running " + testCases.size() + " test cases:");
             for (TestCase testCase : testCases) {
-                System.out.println("  - " + testCase.getId() + ": " + testCase.getName());
+                System.out.println("   - " + testCase.getId() + ": " + testCase.getName());
             }
 
             // Calculate total tasks for progress tracking
@@ -176,7 +224,7 @@ public class Scanner {
                             try {
                                 logger.debug("Executing {} on {}", testCase.getId(), endpoint);
                                 List<Finding> testFindings = testCase.execute(endpoint, httpClient);
-                                
+
                                 // ✅ ДОБАВЛЕНО: Фильтрация ложных срабатываний
                                 List<Finding> filteredFindings = filterFalsePositives(testFindings, endpoint, httpClient);
                                 totalFindingsBeforeFiltering.addAndGet(testFindings.size());
@@ -190,13 +238,12 @@ public class Scanner {
                                             findingsBySeverity.get(finding.getSeverity()).incrementAndGet();
                                         }
                                     }
-
                                     logger.debug("Found {} issues with {} on {} (after filtering)",
-                                            filteredFindings.size(), testCase.getId(), endpoint);
+                                        filteredFindings.size(), testCase.getId(), endpoint);
                                 }
                             } catch (Exception e) {
                                 logger.error("Error executing test case {} on endpoint {}: {}",
-                                        testCase.getId(), endpoint.getPath(), e.getMessage());
+                                    testCase.getId(), endpoint.getPath(), e.getMessage());
                                 if (config.isVerbose()) {
                                     logger.debug("Exception details:", e);
                                 }
@@ -215,21 +262,21 @@ public class Scanner {
 
                 // Wait for all tasks to complete or timeout
                 CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                        .orTimeout(config.getTimeoutMinutes(), TimeUnit.MINUTES)
-                        .exceptionally(ex -> {
-                            logger.warn("Scan interrupted or timed out before completion: {}", ex.getMessage());
-                            return null;
-                        })
-                        .join();
+                    .orTimeout(config.getTimeoutMinutes(), TimeUnit.MINUTES)
+                    .exceptionally(ex -> {
+                        logger.warn("Scan interrupted or timed out before completion: {}", ex.getMessage());
+                        return null;
+                    })
+                    .join();
             }
 
             logger.info("Scan completed. Found {} issues: {} critical, {} high, {} medium, {} low, {} info",
-                    findings.size(),
-                    findingsBySeverity.get(Severity.CRITICAL).get(),
-                    findingsBySeverity.get(Severity.HIGH).get(),
-                    findingsBySeverity.get(Severity.MEDIUM).get(),
-                    findingsBySeverity.get(Severity.LOW).get(),
-                    findingsBySeverity.get(Severity.INFO).get());
+                findings.size(),
+                findingsBySeverity.get(Severity.CRITICAL).get(),
+                findingsBySeverity.get(Severity.HIGH).get(),
+                findingsBySeverity.get(Severity.MEDIUM).get(),
+                findingsBySeverity.get(Severity.LOW).get(),
+                findingsBySeverity.get(Severity.INFO).get());
 
         } catch (Exception e) {
             logger.error("Unhandled exception during scan: {}", e.getMessage());
@@ -239,10 +286,10 @@ public class Scanner {
         }
 
         scanEndTime = LocalDateTime.now();
-        
+
         // ✅ ДОБАВЛЕНО: Детальный вывод результатов
         logFindings(findings);
-        
+
         ScanResult result = new ScanResult(config.getTargetUrl(), findings);
         result.setScanStartTime(scanStartTime);
         result.setScanEndTime(scanEndTime);
@@ -250,7 +297,58 @@ public class Scanner {
         // ✅ ДОБАВЛЕНО: Вывод статистики в консоль при завершении
         printScanSummary(findings);
 
+        // ✅ ДОБАВЛЕНО (Задача 3): Генерация PDF отчета
+        generatePdfReportIfRequested(config, findings);
+
         return result;
+    }
+    
+    /**
+     * ✅ ДОБАВЛЕНО (Задача 3): Генерация PDF отчета, если указан .pdf файл
+     */
+    private void generatePdfReportIfRequested(ScanConfig config, List<Finding> findings) {
+        String outputFile = config.getOutputFile();
+        if (outputFile != null && outputFile.endsWith(".pdf")) {
+            try {
+                // Используем твой PdfReportGenerator
+                Class.forName("org.owasp.astf.utils.PdfReportGenerator");
+                org.owasp.astf.utils.PdfReportGenerator.generate(findings, outputFile);
+                logger.info("✅ PDF отчет создан: {}", outputFile);
+                System.out.println("✅ PDF отчет создан: " + outputFile);
+            } catch (ClassNotFoundException e) {
+                logger.warn("⚠️ PdfReportGenerator не найден. PDF не будет создан.");
+                System.out.println("⚠️ PdfReportGenerator не найден. PDF не будет создан.");
+            } catch (Exception e) {
+                logger.error("❌ Ошибка генерации PDF: {}", e.getMessage());
+                System.out.println("❌ Ошибка генерации PDF: " + e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * ✅ ДОБАВЛЕНО (Задача 4): Проверка на API9:2023 (Improper Inventory)
+     */
+    private List<Finding> checkForImproperInventory(List<EndpointInfo> endpoints) {
+        List<Finding> findings = new ArrayList<>();
+        for (EndpointInfo endpoint : endpoints) {
+            String path = endpoint.getPath().toLowerCase();
+            if (path.contains("debug") || path.contains("admin") || path.contains("test") ||
+                path.contains("v1-old") || path.contains("internal")) {
+                
+                logger.warn("Обнаружен подозрительный эндпоинт (API9): {}", endpoint.getFullUrl());
+                
+                findings.add(new Finding(
+                    "API9:2023",
+                    "Improper Inventory Management",
+                    "Обнаружен подозрительный эндпоинт: " + endpoint.getPath(),
+                    Severity.HIGH,
+                    "API9:2023",
+                    endpoint.getFullUrl(),
+                    "Убедитесь, что этот эндпоинт не доступен в продакшене."
+                ));
+            }
+        }
+        return findings;
     }
 
     /**
@@ -258,9 +356,11 @@ public class Scanner {
      */
     private List<Finding> filterFalsePositives(List<Finding> findings, EndpointInfo endpoint, HttpClient client) {
         List<Finding> filtered = new ArrayList<>();
-        
+
         for (Finding finding : findings) {
-            if ("ASTF-API2-2023".equals(finding.getTestCaseId())) {
+            // ✅ ИСПРАВЛЕНИЕ (Задача 5): Улучшена фильтрация, добавлены новые ID
+            String testCaseId = finding.getTestCaseId();
+            if ("ASTF-API2-2023".equals(testCaseId) || "BROKEN-AUTH".equals(testCaseId)) {
                 // ✅ Проверить, что эндпоинт действительно не требует аутентификации
                 if (isActuallyUnauthenticated(endpoint, client)) {
                     filtered.add(finding);
@@ -274,34 +374,38 @@ public class Scanner {
                 filtered.add(finding);
             }
         }
+
         return filtered;
     }
 
     /**
-     * ✅ ДОБАВЛЕНО: Проверяет, можно ли получить доступ без токена
+     * ✅ ИСПРАВЛЕНО: Реальная проверка аутентификации через HTTP-статусы
      */
     private boolean isActuallyUnauthenticated(EndpointInfo endpoint, HttpClient client) {
         try {
-            // Создаем копию клиента без заголовков аутентификации
+            // Создаем запрос без заголовков аутентификации
             HttpClient noAuthClient = createUnauthenticatedClient();
-            
-            String response = noAuthClient.get(endpoint.getFullUrl(), Map.of()); // без токена
-            int code = extractStatusCode(response);
-            
-            // ✅ Если 200 без токена — действительно уязвим
-            boolean isVulnerable = code == 200;
-            
+
+            // ✅ КРИТИЧЕСКИ ИСПРАВЛЕНО: Используем executeRequest с двумя параметрами (запрос + пустые заголовки)
+            HttpResponse response = noAuthClient.executeRequest(
+                new HttpGet(endpoint.getFullUrl()),
+                new HashMap<>() // Пустой map для заголовков
+            );
+
+            int statusCode = response.getStatusCode();
+            boolean isVulnerable = statusCode == 200;
+
             if (config.isVerbose()) {
-                System.out.println("🔍 Auth Check: " + endpoint.getMethod() + " " + endpoint.getFullUrl() + 
-                                 " -> Status: " + code + ", Vulnerable: " + isVulnerable);
+                System.out.println("🔍 Auth Check: " + endpoint.getMethod() + " " + endpoint.getFullUrl() +
+                    " -> Status: " + statusCode + ", Vulnerable: " + isVulnerable);
             }
-            
+
             return isVulnerable;
         } catch (Exception e) {
             // ✅ Если ошибка — значит, аутентификация есть (ложное срабатывание)
             if (config.isVerbose()) {
-                System.out.println("🔍 Auth Check: " + endpoint.getMethod() + " " + endpoint.getFullUrl() + 
-                                 " -> Error: " + e.getMessage() + " (protected)");
+                System.out.println("🔍 Auth Check: " + endpoint.getMethod() + " " + endpoint.getFullUrl() +
+                    " -> Error: " + e.getMessage() + " (protected)");
             }
             return false;
         }
@@ -319,57 +423,7 @@ public class Scanner {
         noAuthConfig.setFollowRedirects(config.isFollowRedirects());
         noAuthConfig.setProxyHost(config.getProxyHost());
         noAuthConfig.setProxyPort(config.getProxyPort());
-        
         return new HttpClient(noAuthConfig);
-    }
-
-    /**
-     * ✅ ДОБАВЛЕНО: Извлекает статус код из ответа
-     */
-    private int extractStatusCode(String response) {
-        if (response == null || response.trim().isEmpty()) {
-            return 500; // Assume error for null/empty responses
-        }
-        
-        // ✅ Эвристики для определения статус кода
-        boolean isSuccess = true;
-        
-        // Проверяем признаки ошибок аутентификации
-        if (response.toLowerCase().contains("unauthorized") || 
-            response.toLowerCase().contains("authentication") ||
-            response.toLowerCase().contains("401") ||
-            response.toLowerCase().contains("403") ||
-            response.toLowerCase().contains("access denied") ||
-            response.toLowerCase().contains("forbidden")) {
-            return 401; // Authentication error
-        }
-        
-        // Проверяем признаки успешного ответа
-        if (response.trim().startsWith("{") && response.trim().endsWith("}")) {
-            // JSON response
-            if (response.toLowerCase().contains("\"status\":\"success\"") ||
-                response.toLowerCase().contains("\"success\":true") ||
-                response.toLowerCase().contains("\"data\":") ||
-                (response.length() > 50 && !response.toLowerCase().contains("\"error\""))) {
-                return 200; // Success
-            }
-        }
-        
-        // Проверяем HTML ошибки
-        if (response.toLowerCase().contains("<title>401") ||
-            response.toLowerCase().contains("<title>403") ||
-            response.toLowerCase().contains("<title>error")) {
-            return 401; // Authentication error
-        }
-        
-        // Если ответ содержит данные и не содержит ошибок - считаем успешным
-        if (response.length() > 20 && 
-            !response.toLowerCase().contains("error") &&
-            !response.toLowerCase().contains("unauthorized")) {
-            return 200; // Success
-        }
-        
-        return 500; // Unknown/error
     }
 
     /**
@@ -377,11 +431,11 @@ public class Scanner {
      */
     private void printScanSummary(List<Finding> findings) {
         // ✅ Подсчет по уровням серьезности
-        int criticalCount = findings.stream().mapToInt(f -> f.getSeverity() == Severity.CRITICAL ? 1 : 0).sum();
-        int highCount = findings.stream().mapToInt(f -> f.getSeverity() == Severity.HIGH ? 1 : 0).sum();
-        int mediumCount = findings.stream().mapToInt(f -> f.getSeverity() == Severity.MEDIUM ? 1 : 0).sum();
-        int lowCount = findings.stream().mapToInt(f -> f.getSeverity() == Severity.LOW ? 1 : 0).sum();
-        int infoCount = findings.stream().mapToInt(f -> f.getSeverity() == Severity.INFO ? 1 : 0).sum();
+        int criticalCount = (int) findings.stream().filter(f -> f.getSeverity() == Severity.CRITICAL).count();
+        int highCount = (int) findings.stream().filter(f -> f.getSeverity() == Severity.HIGH).count();
+        int mediumCount = (int) findings.stream().filter(f -> f.getSeverity() == Severity.MEDIUM).count();
+        int lowCount = (int) findings.stream().filter(f -> f.getSeverity() == Severity.LOW).count();
+        int infoCount = (int) findings.stream().filter(f -> f.getSeverity() == Severity.INFO).count();
 
         // ✅ Вычисление длительности сканирования
         long durationSeconds = Duration.between(scanStartTime, scanEndTime).getSeconds();
@@ -390,26 +444,30 @@ public class Scanner {
 
         System.out.println("\n🎯 SCAN SUMMARY:");
         System.out.println("┌─────────────────────────────────────────────┐");
-        System.out.println("│ • Total findings: " + String.format("%-25s", findings.size()) + "│");
-        System.out.println("│ • Critical severity: " + String.format("%-21s", criticalCount) + "│");
-        System.out.println("│ • High severity: " + String.format("%-25s", highCount) + "│");
-        System.out.println("│ • Medium severity: " + String.format("%-23s", mediumCount) + "│");
-        System.out.println("│ • Low severity: " + String.format("%-27s", lowCount) + "│");
-        System.out.println("│ • Info findings: " + String.format("%-25s", infoCount) + "│");
-        
+        System.out.println("│ • Total findings:        " + String.format("%-18s", findings.size()) + "│");
+        System.out.println("│ • Critical severity:     " + String.format("%-18s", criticalCount) + "│");
+        System.out.println("│ • High severity:         " + String.format("%-18s", highCount) + "│");
+        System.out.println("│ • Medium severity:       " + String.format("%-18s", mediumCount) + "│");
+        System.out.println("│ • Low severity:          " + String.format("%-18s", lowCount) + "│");
+        System.out.println("│ • Info findings:         " + String.format("%-18s", infoCount) + "│");
+
         // ✅ ДОБАВЛЕНО: Статистика фильтрации
         if (falsePositivesFiltered.get() > 0) {
-            System.out.println("│ • False positives filtered: " + String.format("%-15s", falsePositivesFiltered.get()) + "│");
+            System.out.println("│ • False positives filtered: " + String.format("%-12s", falsePositivesFiltered.get()) + "│");
         }
-        
+
         if (minutes > 0) {
-            System.out.println("│ • Scan duration: " + String.format("%-24s", minutes + "m " + seconds + "s") + "│");
+            System.out.println("│ • Scan duration:         " + String.format("%-18s", minutes + "m " + seconds + "s") + "│");
         } else {
-            System.out.println("│ • Scan duration: " + String.format("%-24s", seconds + " seconds") + "│");
+            System.out.println("│ • Scan duration:         " + String.format("%-18s", seconds + " seconds") + "│");
         }
         
+        // ✅ ИСПРАВЛЕНИЕ: Улучшен вывод имени файла (учитывает PDF)
         String outputFile = config.getOutputFile() != null ? config.getOutputFile() : "scan_results.json";
-        System.out.println("│ • Report saved to: " + String.format("%-21s", outputFile) + "│");
+        if (config.getOutputFile() != null && config.getOutputFile().endsWith(".pdf")) {
+            outputFile = config.getOutputFile();
+        }
+        System.out.println("│ • Report saved to:       " + String.format("%-18s", outputFile) + "│");
         System.out.println("└─────────────────────────────────────────────┘");
 
         // ✅ Дополнительная информация в зависимости от результатов
@@ -418,7 +476,7 @@ public class Scanner {
         } else if (criticalCount + highCount > 0) {
             System.out.println("🚨 ATTENTION: Critical or High severity vulnerabilities found!");
         } else {
-            System.out.println("⚠️  Review medium and low severity findings for potential improvements.");
+            System.out.println("⚠️ Review medium and low severity findings for potential improvements.");
         }
 
         // ✅ ДОБАВЛЕНО: Информация о фильтрации
@@ -435,15 +493,13 @@ public class Scanner {
             System.out.println("✅ No security findings detected");
             return;
         }
-        
+
         System.out.println("\n🔍 SECURITY FINDINGS DETECTED (" + findings.size() + " total):");
         for (Finding finding : findings) {
             String severityPrefix = getSeverityPrefix(finding.getSeverity());
-            
-            System.out.println(severityPrefix + " [" + finding.getId() + "] " + 
-                             finding.getTitle() + ": " + 
-                             finding.getDescription().split("\n")[0]);
-            
+            System.out.println(severityPrefix + " [" + finding.getId() + "] " + finding.getTitle() +
+                ": " + finding.getDescription().split("\n")[0]);
+
             if (config.isVerbose()) {
                 System.out.println("   Affected Resource: " + finding.getEndpoint());
                 String remediation = finding.getRemediation();
@@ -459,12 +515,18 @@ public class Scanner {
      */
     private String getSeverityPrefix(Severity severity) {
         switch (severity) {
-            case CRITICAL: return "🔴 CRITICAL";
-            case HIGH: return "🟠 HIGH";
-            case MEDIUM: return "🟡 MEDIUM";
-            case LOW: return "🟢 LOW";
-            case INFO: return "🔵 INFO";
-            default: return "⚪ UNKNOWN";
+            case CRITICAL:
+                return "🔴 CRITICAL";
+            case HIGH:
+                return "🟠 HIGH";
+            case MEDIUM:
+                return "🟡 MEDIUM";
+            case LOW:
+                return "🟢 LOW";
+            case INFO:
+                return "🔵 INFO";
+            default:
+                return "⚪ UNKNOWN";
         }
     }
 
@@ -506,6 +568,7 @@ public class Scanner {
         // ✅ ИСПРАВЛЕНИЕ: Проверяем и исправляем baseUrl, если он некорректный
         List<EndpointInfo> fixedEndpoints = new ArrayList<>();
         String targetUrl = config.getTargetUrl();
+
         for (EndpointInfo ep : endpoints) {
             if ("/".equals(ep.getBaseUrl()) || ep.getBaseUrl() == null || ep.getBaseUrl().startsWith("/")) {
                 // Заменяем некорректный baseUrl на targetUrl из конфига
@@ -517,13 +580,17 @@ public class Scanner {
                     ep.getRequestBody(),
                     ep.isRequiresAuthentication()
                 ));
-                System.out.println("🔧 DEBUG: Fixed baseUrl for endpoint: " + ep.getMethod() + " " + ep.getPath() + " -> " + targetUrl);
+                
+                if (config.isVerbose()) {
+                    System.out.println("🔧 DEBUG: Fixed baseUrl for endpoint: " + ep.getMethod() + " " + 
+                        ep.getPath() + " -> " + targetUrl);
+                }
             } else {
                 fixedEndpoints.add(ep);
             }
         }
-        endpoints = fixedEndpoints;
 
+        endpoints = fixedEndpoints;
         return endpoints;
     }
 
@@ -535,8 +602,10 @@ public class Scanner {
      */
     private List<EndpointInfo> applyGostToEndpoints(List<EndpointInfo> endpoints) {
         List<EndpointInfo> gostEndpoints = new ArrayList<>();
-        String gostBaseUrl = "https://api.gost.bankingapi.ru:8443";
         
+        // ✅ КРИТИЧЕСКИ ИСПРАВЛЕНО (Задача 1): Убраны ВСЕ пробелы в конце URL
+        String gostBaseUrl = "https://api.gost.bankingapi.ru:8443";
+
         for (EndpointInfo endpoint : endpoints) {
             // Создаем новый EndpointInfo с GOST baseUrl
             EndpointInfo gostEndpoint = new EndpointInfo(
@@ -549,7 +618,7 @@ public class Scanner {
             );
             gostEndpoints.add(gostEndpoint);
         }
-        
+
         logger.info("Applied GOST gateway transformation to {} endpoints", gostEndpoints.size());
         return gostEndpoints;
     }
@@ -563,7 +632,7 @@ public class Scanner {
         double percentComplete = (double) completed / total * 100;
 
         logger.info("Scan progress: {}% ({}/{} tasks completed)",
-                String.format("%.1f", percentComplete), completed, total);
+            String.format("%.1f", percentComplete), completed, total);
     }
 
     /**

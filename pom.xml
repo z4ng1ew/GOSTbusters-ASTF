@@ -16,35 +16,46 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- ✅ ИСПРАВЛЕНО: Добавлены отсутствующие версии -->
         <jackson.version>2.15.3</jackson.version>
         <log4j.version>2.22.1</log4j.version>
+        <okhttp.version>4.12.0</okhttp.version> <!-- ✅ ДОБАВЛЕНО -->
+        <picocli.version>4.7.5</picocli.version> <!-- ✅ ДОБАВЛЕНО -->
         <junit.version>5.10.1</junit.version>
-        <mockito.version>5.8.0</mockito.version> <!-- ✅ ДОБАВЛЕНО -->
+        <mockito.version>5.8.0</mockito.version>
+        <swagger.parser.version>2.1.22</swagger.parser.version> <!-- ✅ ДОБАВЛЕНО -->
     </properties>
 
     <dependencies>
-        <!-- HTTP Client -->
+        <!-- ✅ HTTP Client (только OkHttp - НЕТ КОНФЛИКТОВ!) -->
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
-            <version>4.12.0</version>
+            <version>${okhttp.version}</version> <!-- ✅ ИСПОЛЬЗУЕТСЯ СВОЙСТВО -->
         </dependency>
 
-        <!-- JSON Processing -->
+        <!-- ✅ JSON Processing -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
         </dependency>
 
-        <!-- CLI Processing -->
+        <!-- ✅ YAML Processing -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <!-- ✅ CLI Processing -->
         <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
-            <version>4.7.5</version>
+            <version>${picocli.version}</version> <!-- ✅ ИСПОЛЬЗУЕТСЯ СВОЙСТВО -->
         </dependency>
 
-        <!-- Logging -->
+        <!-- ✅ Logging -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
@@ -61,24 +72,17 @@
             <version>${log4j.version}</version>
         </dependency>
 
-        <!-- YAML Processing -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
-        <!-- OpenAPI Parser -->
+        <!-- ✅ OpenAPI Parser -->
         <dependency>
             <groupId>io.swagger.parser.v3</groupId>
             <artifactId>swagger-parser</artifactId>
-            <version>2.1.22</version>
+            <version>${swagger.parser.version}</version> <!-- ✅ ИСПОЛЬЗУЕТСЯ СВОЙСТВО -->
         </dependency>
 
-        <!-- ✅ ИСПРАВЛЕННЫЕ ТЕСТОВЫЕ ЗАВИСИМОСТИ -->
+        <!-- ✅ Тесты -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId> <!-- ✅ Включает api, engine, params -->
+            <artifactId>junit-jupiter</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
@@ -97,7 +101,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- ✅ ДОБАВЛЕНО: Параметризованные тесты JUnit 5 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
@@ -105,7 +108,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- ✅ ДОБАВЛЕНО: JUnit Platform Suite -->
         <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-suite</artifactId>
@@ -131,7 +133,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.1.2</version>
                 <configuration>
-                    <skipTests>true</skipTests> <!-- ✅ Пропускаем тесты при сборке -->
+                    <skipTests>true</skipTests> <!-- ✅ Отлично: для хакатона -->
                 </configuration>
             </plugin>
 

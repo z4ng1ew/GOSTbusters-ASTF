@@ -1,9 +1,15 @@
 package org.owasp.astf.core.config;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.owasp.astf.core.EndpointInfo;
 
@@ -56,11 +62,25 @@ public class ScanConfig {
     private int maxFindings = 0;
     private List<String> excludeSeverities;
 
-    // ✅ НОВЫЕ ПОЛЯ ДЛЯ ХАКАТОНА
+    // ✅ ПОЛЯ ДЛЯ ХАКАТОНА (OpenAPI, GOST, BOLA)
     private String openApiSpecPath;
     private boolean useGost = false;
     private String attackerToken;
     private String victimToken;
+    
+    // 💡 OPEN BANKING API ПОЛЯ (из предыдущего шага)
+    private String clientId;
+    private String clientSecret;
+    private String bankId;
+    private String consentId;
+    
+    // 💡 1. AsyncAPI ПОЛЯ
+    private String asyncApiSpecPath;
+    private List<String> enabledAsyncTestCases;
+    
+    // 💡 2. ПОЛЯ ДЛЯ ПОДДЕРЖКИ ПЛАГИНОВ
+    private List<String> pluginJars;
+    private String pluginRepositoryUrl;
 
     /**
      * Creates a new scan configuration with default settings.
@@ -72,237 +92,50 @@ public class ScanConfig {
         this.disabledTestCaseIds = new ArrayList<>();
         this.excludePatterns = new ArrayList<>();
         this.excludeSeverities = new ArrayList<>();
+        this.enabledAsyncTestCases = new ArrayList<>(); // Инициализация
+        this.pluginJars = new ArrayList<>();           // Инициализация
     }
 
-    // Target and scope getters/setters
+    // Target and scope getters/setters (сокращено для экономии места)
+    // ... (Геттеры и сеттеры targetUrl, endpoints, discoveryEnabled, excludePatterns, headers)
 
-    /**
-     * Gets the target URL for the API scan.
-     *
-     * @return The target URL
-     */
-    public String getTargetUrl() {
-        return targetUrl;
-    }
-
-    /**
-     * Sets the target URL for the API scan.
-     *
-     * @param targetUrl The target URL
-     */
-    public void setTargetUrl(String targetUrl) {
-        // Ensure target URL ends with a trailing slash
+    public String getTargetUrl() { return targetUrl; }
+    public void setTargetUrl(String targetUrl) { 
         if (targetUrl != null && !targetUrl.endsWith("/")) {
             this.targetUrl = targetUrl + "/";
         } else {
             this.targetUrl = targetUrl;
         }
     }
+    public List<EndpointInfo> getEndpoints() { return endpoints; }
+    public void setEndpoints(List<EndpointInfo> endpoints) { this.endpoints = endpoints; }
+    public boolean isDiscoveryEnabled() { return discoveryEnabled; }
+    public void setDiscoveryEnabled(boolean discoveryEnabled) { this.discoveryEnabled = discoveryEnabled; }
+    public List<String> getExcludePatterns() { return excludePatterns; }
+    public void setExcludePatterns(List<String> excludePatterns) { this.excludePatterns = excludePatterns; }
+    public Map<String, String> getHeaders() { return headers; }
+    public void setHeaders(Map<String, String> headers) { this.headers = headers; }
+    public void addHeader(String name, String value) { this.headers.put(name, value); }
 
-    /**
-     * Gets the list of specific endpoints to scan.
-     *
-     * @return The endpoints to scan
-     */
-    public List<EndpointInfo> getEndpoints() {
-        return endpoints;
-    }
 
-    /**
-     * Sets the list of specific endpoints to scan.
-     *
-     * @param endpoints The endpoints to scan
-     */
-    public void setEndpoints(List<EndpointInfo> endpoints) {
-        this.endpoints = endpoints;
-    }
-
-    /**
-     * Adds an endpoint to scan.
-     *
-     * @param endpoint The endpoint to add
-     */
-    public void addEndpoint(EndpointInfo endpoint) {
-        this.endpoints.add(endpoint);
-    }
-
-    /**
-     * Checks if endpoint discovery is enabled.
-     *
-     * @return true if endpoint discovery is enabled
-     */
-    public boolean isDiscoveryEnabled() {
-        return discoveryEnabled;
-    }
-
-    /**
-     * Sets whether endpoint discovery is enabled.
-     *
-     * @param discoveryEnabled true to enable endpoint discovery
-     */
-    public void setDiscoveryEnabled(boolean discoveryEnabled) {
-        this.discoveryEnabled = discoveryEnabled;
-    }
-
-    /**
-     * Gets patterns to exclude from scanning.
-     *
-     * @return The exclude patterns
-     */
-    public List<String> getExcludePatterns() {
-        return excludePatterns;
-    }
-
-    /**
-     * Sets patterns to exclude from scanning.
-     *
-     * @param excludePatterns The exclude patterns
-     */
-    public void setExcludePatterns(List<String> excludePatterns) {
-        this.excludePatterns = excludePatterns;
-    }
-
-    /**
-     * Gets HTTP headers to include in requests.
-     *
-     * @return The HTTP headers
-     */
-    public Map<String, String> getHeaders() {
-        return headers;
-    }
-
-    /**
-     * Sets HTTP headers to include in requests.
-     *
-     * @param headers The HTTP headers
-     */
-    public void setHeaders(Map<String, String> headers) {
-        this.headers = headers;
-    }
-
-    /**
-     * Adds an HTTP header.
-     *
-     * @param name The header name
-     * @param value The header value
-     */
-    public void addHeader(String name, String value) {
-        this.headers.put(name, value);
-    }
-
-    // Authentication getters/setters
-
-    /**
-     * Gets the username for basic authentication.
-     *
-     * @return The basic auth username
-     */
-    public String getBasicAuthUsername() {
-        return basicAuthUsername;
-    }
-
-    /**
-     * Sets the username for basic authentication.
-     *
-     * @param basicAuthUsername The basic auth username
-     */
-    public void setBasicAuthUsername(String basicAuthUsername) {
-        this.basicAuthUsername = basicAuthUsername;
-    }
-
-    /**
-     * Gets the password for basic authentication.
-     *
-     * @return The basic auth password
-     */
-    public String getBasicAuthPassword() {
-        return basicAuthPassword;
-    }
-
-    /**
-     * Sets the password for basic authentication.
-     *
-     * @param basicAuthPassword The basic auth password
-     */
-    public void setBasicAuthPassword(String basicAuthPassword) {
-        this.basicAuthPassword = basicAuthPassword;
-    }
-
-    /**
-     * Gets the API key for authentication.
-     *
-     * @return The API key
-     */
-    public String getApiKey() {
-        return apiKey;
-    }
-
-    /**
-     * Sets the API key for authentication.
-     *
-     * @param apiKey The API key
-     */
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
-    }
-
-    /**
-     * Gets the header name for the API key.
-     *
-     * @return The API key header name
-     */
-    public String getApiKeyHeader() {
-        return apiKeyHeader;
-    }
-
-    /**
-     * Sets the header name for the API key.
-     *
-     * @param apiKeyHeader The API key header name
-     */
-    public void setApiKeyHeader(String apiKeyHeader) {
-        this.apiKeyHeader = apiKeyHeader;
-    }
-
-    /**
-     * Gets the bearer token for authentication.
-     *
-     * @return The bearer token
-     */
-    public String getBearerToken() {
-        return bearerToken;
-    }
-
-    /**
-     * Sets the bearer token for authentication.
-     *
-     * @param bearerToken The bearer token
-     */
-    public void setBearerToken(String bearerToken) {
+    // Authentication getters/setters (сокращено для экономии места)
+    // ... (Геттеры и сеттеры basicAuthUsername, basicAuthPassword, apiKey, apiKeyHeader, bearerToken, authHeader)
+    public String getBasicAuthUsername() { return basicAuthUsername; }
+    public void setBasicAuthUsername(String basicAuthUsername) { this.basicAuthUsername = basicAuthUsername; }
+    public String getBasicAuthPassword() { return basicAuthPassword; }
+    public void setBasicAuthPassword(String basicAuthPassword) { this.basicAuthPassword = basicAuthPassword; }
+    public String getApiKey() { return apiKey; }
+    public void setApiKey(String apiKey) { this.apiKey = apiKey; }
+    public String getApiKeyHeader() { return apiKeyHeader; }
+    public void setApiKeyHeader(String apiKeyHeader) { this.apiKeyHeader = apiKeyHeader; }
+    public String getBearerToken() { return bearerToken; }
+    public void setBearerToken(String bearerToken) { 
         this.bearerToken = bearerToken;
-
-        // Automatically add the Authorization header if not present
-        if (bearerToken != null && !bearerToken.isEmpty() &&
-                !headers.containsKey("Authorization")) {
+        if (bearerToken != null && !bearerToken.isEmpty() && !headers.containsKey("Authorization")) {
             headers.put("Authorization", "Bearer " + bearerToken);
         }
     }
-
-    /**
-     * Gets the authentication header in format "HeaderName: HeaderValue".
-     *
-     * @return The authentication header
-     */
-    public String getAuthHeader() {
-        return authHeader;
-    }
-
-    /**
-     * Sets the authentication header in format "HeaderName: HeaderValue".
-     * The header will be automatically parsed and added to the headers map.
-     *
-     * @param authHeader The authentication header in "Name: Value" format
-     */
+    public String getAuthHeader() { return authHeader; }
     public void setAuthHeader(String authHeader) {
         this.authHeader = authHeader;
         if (authHeader != null && !authHeader.trim().isEmpty()) {
@@ -313,393 +146,262 @@ public class ScanConfig {
         }
     }
 
-    // Proxy getters/setters
 
+    // Proxy getters/setters (сокращено для экономии места)
+    // ... (Геттеры и сеттеры proxyHost, proxyPort, proxyUsername, proxyPassword)
+    public String getProxyHost() { return proxyHost; }
+    public void setProxyHost(String proxyHost) { this.proxyHost = proxyHost; }
+    public int getProxyPort() { return proxyPort; }
+    public void setProxyPort(int proxyPort) { this.proxyPort = proxyPort; }
+    public String getProxyUsername() { return proxyUsername; }
+    public void setProxyUsername(String proxyUsername) { this.proxyUsername = proxyUsername; }
+    public String getProxyPassword() { return proxyPassword; }
+    public void setProxyPassword(String proxyPassword) { this.proxyPassword = proxyPassword; }
+
+
+    // Test case configuration getters/setters (сокращено для экономии места)
+    // ... (Геттеры и сеттеры enabledTestCaseIds, disabledTestCaseIds)
+    public List<String> getEnabledTestCaseIds() { return enabledTestCaseIds; }
+    public void setEnabledTestCaseIds(List<String> enabledTestCaseIds) { this.enabledTestCaseIds = enabledTestCaseIds; }
+    public List<String> getDisabledTestCaseIds() { return disabledTestCaseIds; }
+    public void setDisabledTestCaseIds(List<String> disabledTestCaseIds) { this.disabledTestCaseIds = disabledTestCaseIds; }
+
+
+    // Execution settings getters/setters (сокращено для экономии места)
+    // ... (Геттеры и сеттеры threads, timeoutMinutes, requestDelayMs, maxRequestsPerSecond, followRedirects, validateCertificates)
+    public int getThreads() { return threads; }
+    public void setThreads(int threads) { this.threads = threads; }
+    public int getTimeoutMinutes() { return timeoutMinutes; }
+    public void setTimeoutMinutes(int timeoutMinutes) { this.timeoutMinutes = timeoutMinutes; }
+    public int getRequestDelayMs() { return requestDelayMs; }
+    public void setRequestDelayMs(int requestDelayMs) { this.requestDelayMs = requestDelayMs; }
+    public int getMaxRequestsPerSecond() { return maxRequestsPerSecond; }
+    public void setMaxRequestsPerSecond(int maxRequestsPerSecond) { this.maxRequestsPerSecond = maxRequestsPerSecond; }
+    public boolean isFollowRedirects() { return followRedirects; }
+    public void setFollowRedirects(boolean followRedirects) { this.followRedirects = followRedirects; }
+    public boolean isValidateCertificates() { return validateCertificates; }
+    public void setValidateCertificates(boolean validateCertificates) { this.validateCertificates = validateCertificates; }
+
+
+    // Output settings getters/setters (сокращено для экономии места)
+    // ... (Геттеры и сеттеры outputFormat, outputFile, verbose, maxFindings, excludeSeverities)
+    public OutputFormat getOutputFormat() { return outputFormat; }
+    public void setOutputFormat(OutputFormat outputFormat) { this.outputFormat = outputFormat; }
+    public String getOutputFile() { return outputFile; }
+    public void setOutputFile(String outputFile) { this.outputFile = outputFile; }
+    public boolean isVerbose() { return verbose; }
+    public void setVerbose(boolean verbose) { this.verbose = verbose; }
+    public int getMaxFindings() { return maxFindings; }
+    public void setMaxFindings(int maxFindings) { this.maxFindings = maxFindings; }
+    public List<String> getExcludeSeverities() { return excludeSeverities; }
+    public void setExcludeSeverities(List<String> excludeSeverities) { this.excludeSeverities = excludeSeverities; }
+
+
+    // ✅ ГЕТТЕРЫ И СЕТТЕРЫ ДЛЯ ХАКАТОНА
+    public String getOpenApiSpecPath() { return openApiSpecPath; }
+    public void setOpenApiSpecPath(String openApiSpecPath) { this.openApiSpecPath = openApiSpecPath; }
+    public boolean isUseGost() { return useGost; }
+    public void setUseGost(boolean useGost) { this.useGost = useGost; }
+    public String getAttackerToken() { return attackerToken; }
+    public void setAttackerToken(String attackerToken) { this.attackerToken = attackerToken; }
+    public String getVictimToken() { return victimToken; }
+    public void setVictimToken(String victimToken) { this.victimToken = victimToken; }
+    
+    // 💡 ГЕТТЕРЫ И СЕТТЕРЫ ДЛЯ OPEN BANKING API
+    public String getClientId() { return clientId; }
+    public void setClientId(String clientId) { this.clientId = clientId; }
+    public String getClientSecret() { return clientSecret; }
+    public void setClientSecret(String clientSecret) { this.clientSecret = clientSecret; }
+    public String getBankId() { return bankId; }
+    public void setBankId(String bankId) { this.bankId = bankId; }
+    public String getConsentId() { return consentId; }
+    public void setConsentId(String consentId) { this.consentId = consentId; }
+    
+    // 💡 1. ГЕТТЕРЫ И СЕТТЕРЫ ДЛЯ AsyncAPI
+    
     /**
-     * Gets the proxy host.
+     * Gets the path to AsyncAPI specification file.
      *
-     * @return The proxy host
+     * @return The AsyncAPI specification file path
      */
-    public String getProxyHost() {
-        return proxyHost;
+    public String getAsyncApiSpecPath() {
+        return asyncApiSpecPath;
     }
 
     /**
-     * Sets the proxy host.
+     * Sets the path to AsyncAPI specification file.
      *
-     * @param proxyHost The proxy host
+     * @param asyncApiSpecPath The AsyncAPI specification file path
      */
-    public void setProxyHost(String proxyHost) {
-        this.proxyHost = proxyHost;
+    public void setAsyncApiSpecPath(String asyncApiSpecPath) {
+        this.asyncApiSpecPath = asyncApiSpecPath;
+    }
+    
+    /**
+     * Gets the IDs of AsyncAPI-specific test cases to enable.
+     *
+     * @return The enabled AsyncAPI test case IDs
+     */
+    public List<String> getEnabledAsyncTestCases() {
+        return enabledAsyncTestCases;
     }
 
     /**
-     * Gets the proxy port.
+     * Sets the IDs of AsyncAPI-specific test cases to enable.
      *
-     * @return The proxy port
+     * @param enabledAsyncTestCases The enabled AsyncAPI test case IDs
      */
-    public int getProxyPort() {
-        return proxyPort;
+    public void setEnabledAsyncTestCases(List<String> enabledAsyncTestCases) {
+        this.enabledAsyncTestCases = enabledAsyncTestCases;
+    }
+
+    // 💡 2. ГЕТТЕРЫ И СЕТТЕРЫ ДЛЯ ПОДДЕРЖКИ ПЛАГИНОВ
+    
+    /**
+     * Gets the list of local paths to plugin JAR files.
+     *
+     * @return The list of plugin JAR paths
+     */
+    public List<String> getPluginJars() {
+        return pluginJars;
     }
 
     /**
-     * Sets the proxy port.
+     * Sets the list of local paths to plugin JAR files.
      *
-     * @param proxyPort The proxy port
+     * @param pluginJars The list of plugin JAR paths
      */
-    public void setProxyPort(int proxyPort) {
-        this.proxyPort = proxyPort;
+    public void setPluginJars(List<String> pluginJars) {
+        this.pluginJars = pluginJars;
     }
 
     /**
-     * Gets the proxy username for authentication.
+     * Gets the remote URL for a plugin repository.
      *
-     * @return The proxy username
+     * @return The plugin repository URL
      */
-    public String getProxyUsername() {
-        return proxyUsername;
+    public String getPluginRepositoryUrl() {
+        return pluginRepositoryUrl;
     }
 
     /**
-     * Sets the proxy username for authentication.
+     * Sets the remote URL for a plugin repository.
      *
-     * @param proxyUsername The proxy username
+     * @param pluginRepositoryUrl The plugin repository URL
      */
-    public void setProxyUsername(String proxyUsername) {
-        this.proxyUsername = proxyUsername;
+    public void setPluginRepositoryUrl(String pluginRepositoryUrl) {
+        this.pluginRepositoryUrl = pluginRepositoryUrl;
     }
+    
+    // 💡 3. МЕТОД НАСЛЕДОВАНИЯ КОНФИГУРАЦИИ
 
     /**
-     * Gets the proxy password for authentication.
+     * Merges properties from a parent configuration into this one,
+     * overriding only if the current property is null.
      *
-     * @return The proxy password
+     * @param parentConfig The configuration to inherit properties from.
+     * @return This ScanConfig instance with inherited properties.
      */
-    public String getProxyPassword() {
-        return proxyPassword;
+    public ScanConfig inheritFrom(ScanConfig parentConfig) {
+        if (parentConfig == null) return this;
+
+        // Target and scope
+        if (this.targetUrl == null) this.targetUrl = parentConfig.targetUrl;
+        if (this.endpoints.isEmpty()) this.endpoints.addAll(parentConfig.endpoints);
+        if (this.excludePatterns.isEmpty()) this.excludePatterns.addAll(parentConfig.excludePatterns);
+        if (this.headers.isEmpty()) this.headers.putAll(parentConfig.headers);
+
+        // Authentication
+        if (this.basicAuthUsername == null) this.basicAuthUsername = parentConfig.basicAuthUsername;
+        if (this.basicAuthPassword == null) this.basicAuthPassword = parentConfig.basicAuthPassword;
+        if (this.apiKey == null) this.apiKey = parentConfig.apiKey;
+        if (this.bearerToken == null) this.bearerToken = parentConfig.bearerToken;
+        if (this.authHeader == null) this.authHeader = parentConfig.authHeader;
+
+        // Open Banking
+        if (this.clientId == null) this.clientId = parentConfig.clientId;
+        if (this.clientSecret == null) this.clientSecret = parentConfig.clientSecret;
+        if (this.bankId == null) this.bankId = parentConfig.bankId;
+        if (this.consentId == null) this.consentId = parentConfig.consentId;
+
+        // Specs and Plugins
+        if (this.openApiSpecPath == null) this.openApiSpecPath = parentConfig.openApiSpecPath;
+        if (this.asyncApiSpecPath == null) this.asyncApiSpecPath = parentConfig.asyncApiSpecPath;
+        if (this.enabledTestCaseIds.isEmpty()) this.enabledTestCaseIds.addAll(parentConfig.enabledTestCaseIds);
+        if (this.pluginJars.isEmpty()) this.pluginJars.addAll(parentConfig.pluginJars);
+        if (this.pluginRepositoryUrl == null) this.pluginRepositoryUrl = parentConfig.pluginRepositoryUrl;
+        
+        // Settings (проверяем, что не используется значение по умолчанию 0/false)
+        if (this.threads == 10 && parentConfig.threads != 10) this.threads = parentConfig.threads;
+        
+        return this;
     }
+    
+    // 💡 4. УЛУЧШЕННЫЙ МЕТОД ВАЛИДАЦИИ КОНФИГУРАЦИИ
 
     /**
-     * Sets the proxy password for authentication.
+     * Validates the current scan configuration settings.
      *
-     * @param proxyPassword The proxy password
+     * @throws IllegalArgumentException if any configuration setting is invalid.
      */
-    public void setProxyPassword(String proxyPassword) {
-        this.proxyPassword = proxyPassword;
+    public void validate() {
+        if (targetUrl == null || targetUrl.trim().isEmpty()) {
+            throw new IllegalArgumentException("Target URL must be set.");
+        }
+        
+        if (threads <= 0) {
+            throw new IllegalArgumentException("Number of threads must be a positive integer.");
+        }
+        
+        // GOST + Open Banking API validation
+        if (useGost) {
+            Pattern obApiPattern = Pattern.compile("open\\.bankingapi\\.ru", Pattern.CASE_INSENSITIVE);
+            Matcher matcher = obApiPattern.matcher(targetUrl);
+            
+            if (!matcher.find()) {
+                throw new IllegalArgumentException("GOST can only be used with a target URL containing 'open.bankingapi.ru'. Current URL: " + targetUrl);
+            }
+             if (clientId == null || clientId.isEmpty() || clientSecret == null || clientSecret.isEmpty()) {
+                 throw new IllegalArgumentException("Client ID and Client Secret must be provided when useGost is true for Open Banking API testing.");
+            }
+        }
+        
+        // OpenAPI spec validation
+        if (openApiSpecPath != null) {
+            String lowerCasePath = openApiSpecPath.toLowerCase();
+            if (!lowerCasePath.endsWith(".yaml") && !lowerCasePath.endsWith(".json")) {
+                throw new IllegalArgumentException("OpenAPI spec path must point to a .yaml or .json file. Current path: " + openApiSpecPath);
+            }
+        }
+        
+        // AsyncAPI spec validation
+        if (asyncApiSpecPath != null) {
+            String lowerCasePath = asyncApiSpecPath.toLowerCase();
+            // AsyncAPI также может быть в YAML/JSON, но добавим проверку для ясности
+            if (!lowerCasePath.endsWith(".yaml") && !lowerCasePath.endsWith(".json")) {
+                throw new IllegalArgumentException("AsyncAPI spec path must point to a .yaml or .json file. Current path: " + asyncApiSpecPath);
+            }
+        }
+        
+        // Plugin file validation (Recommendation 3)
+        if (pluginJars != null) {
+            for (String jarPath : pluginJars) {
+                if (!jarPath.toLowerCase().endsWith(".jar")) {
+                    throw new IllegalArgumentException("Plugin must be a .jar file: " + jarPath);
+                }
+                // Проверить существование файла
+                try {
+                    Path path = Paths.get(jarPath);
+                    if (!Files.exists(path)) {
+                        throw new IllegalArgumentException("Plugin file does not exist: " + jarPath);
+                    }
+                } catch (Exception e) {
+                    throw new IllegalArgumentException("Invalid path or file access error for plugin: " + jarPath + ". Error: " + e.getMessage());
+                }
+            }
+        }
     }
 
-    // Test case configuration getters/setters
-
-    /**
-     * Gets the IDs of test cases to enable.
-     *
-     * @return The enabled test case IDs
-     */
-    public List<String> getEnabledTestCaseIds() {
-        return enabledTestCaseIds;
-    }
-
-    /**
-     * Sets the IDs of test cases to enable.
-     *
-     * @param enabledTestCaseIds The enabled test case IDs
-     */
-    public void setEnabledTestCaseIds(List<String> enabledTestCaseIds) {
-        this.enabledTestCaseIds = enabledTestCaseIds;
-    }
-
-    /**
-     * Gets the IDs of test cases to disable.
-     *
-     * @return The disabled test case IDs
-     */
-    public List<String> getDisabledTestCaseIds() {
-        return disabledTestCaseIds;
-    }
-
-    /**
-     * Sets the IDs of test cases to disable.
-     *
-     * @param disabledTestCaseIds The disabled test case IDs
-     */
-    public void setDisabledTestCaseIds(List<String> disabledTestCaseIds) {
-        this.disabledTestCaseIds = disabledTestCaseIds;
-    }
-
-    // Execution settings getters/setters
-
-    /**
-     * Gets the number of threads to use for scanning.
-     *
-     * @return The thread count
-     */
-    public int getThreads() {
-        return threads;
-    }
-
-    /**
-     * Sets the number of threads to use for scanning.
-     *
-     * @param threads The thread count
-     */
-    public void setThreads(int threads) {
-        this.threads = threads;
-    }
-
-    /**
-     * Gets the timeout for the scan in minutes.
-     *
-     * @return The timeout in minutes
-     */
-    public int getTimeoutMinutes() {
-        return timeoutMinutes;
-    }
-
-    /**
-     * Sets the timeout for the scan in minutes.
-     *
-     * @param timeoutMinutes The timeout in minutes
-     */
-    public void setTimeoutMinutes(int timeoutMinutes) {
-        this.timeoutMinutes = timeoutMinutes;
-    }
-
-    /**
-     * Gets the delay between requests in milliseconds.
-     *
-     * @return The request delay in milliseconds
-     */
-    public int getRequestDelayMs() {
-        return requestDelayMs;
-    }
-
-    /**
-     * Sets the delay between requests in milliseconds.
-     *
-     * @param requestDelayMs The request delay in milliseconds
-     */
-    public void setRequestDelayMs(int requestDelayMs) {
-        this.requestDelayMs = requestDelayMs;
-    }
-
-    /**
-     * Gets the maximum number of requests per second.
-     *
-     * @return The maximum requests per second
-     */
-    public int getMaxRequestsPerSecond() {
-        return maxRequestsPerSecond;
-    }
-
-    /**
-     * Sets the maximum number of requests per second.
-     *
-     * @param maxRequestsPerSecond The maximum requests per second
-     */
-    public void setMaxRequestsPerSecond(int maxRequestsPerSecond) {
-        this.maxRequestsPerSecond = maxRequestsPerSecond;
-    }
-
-    /**
-     * Checks if the client should follow redirects.
-     *
-     * @return true if redirects should be followed
-     */
-    public boolean isFollowRedirects() {
-        return followRedirects;
-    }
-
-    /**
-     * Sets whether the client should follow redirects.
-     *
-     * @param followRedirects true to follow redirects
-     */
-    public void setFollowRedirects(boolean followRedirects) {
-        this.followRedirects = followRedirects;
-    }
-
-    /**
-     * Checks if SSL certificates should be validated.
-     *
-     * @return true if certificates should be validated
-     */
-    public boolean isValidateCertificates() {
-        return validateCertificates;
-    }
-
-    /**
-     * Sets whether SSL certificates should be validated.
-     *
-     * @param validateCertificates true to validate certificates
-     */
-    public void setValidateCertificates(boolean validateCertificates) {
-        this.validateCertificates = validateCertificates;
-    }
-
-    // Output settings getters/setters
-
-    /**
-     * Gets the output format for the scan results.
-     *
-     * @return The output format
-     */
-    public OutputFormat getOutputFormat() {
-        return outputFormat;
-    }
-
-    /**
-     * Sets the output format for the scan results.
-     *
-     * @param outputFormat The output format
-     */
-    public void setOutputFormat(OutputFormat outputFormat) {
-        this.outputFormat = outputFormat;
-    }
-
-    /**
-     * Gets the output file path for the scan results.
-     *
-     * @return The output file path
-     */
-    public String getOutputFile() {
-        return outputFile;
-    }
-
-    /**
-     * Sets the output file path for the scan results.
-     *
-     * @param outputFile The output file path
-     */
-    public void setOutputFile(String outputFile) {
-        this.outputFile = outputFile;
-    }
-
-    /**
-     * Checks if verbose output is enabled.
-     *
-     * @return true if verbose output is enabled
-     */
-    public boolean isVerbose() {
-        return verbose;
-    }
-
-    /**
-     * Sets whether verbose output is enabled.
-     *
-     * @param verbose true to enable verbose output
-     */
-    public void setVerbose(boolean verbose) {
-        this.verbose = verbose;
-    }
-
-    /**
-     * Gets the maximum number of findings to include in the results.
-     *
-     * @return The maximum number of findings
-     */
-    public int getMaxFindings() {
-        return maxFindings;
-    }
-
-    /**
-     * Sets the maximum number of findings to include in the results.
-     *
-     * @param maxFindings The maximum number of findings
-     */
-    public void setMaxFindings(int maxFindings) {
-        this.maxFindings = maxFindings;
-    }
-
-    /**
-     * Gets the severities to exclude from the results.
-     *
-     * @return The excluded severities
-     */
-    public List<String> getExcludeSeverities() {
-        return excludeSeverities;
-    }
-
-    /**
-     * Sets the severities to exclude from the results.
-     *
-     * @param excludeSeverities The excluded severities
-     */
-    public void setExcludeSeverities(List<String> excludeSeverities) {
-        this.excludeSeverities = excludeSeverities;
-    }
-
-    // ✅ НОВЫЕ ГЕТТЕРЫ И СЕТТЕРЫ ДЛЯ ХАКАТОНА
-
-    /**
-     * Gets the path to OpenAPI specification file.
-     *
-     * @return The OpenAPI specification file path
-     */
-    public String getOpenApiSpecPath() {
-        return openApiSpecPath;
-    }
-
-    /**
-     * Sets the path to OpenAPI specification file.
-     *
-     * @param openApiSpecPath The OpenAPI specification file path
-     */
-    public void setOpenApiSpecPath(String openApiSpecPath) {
-        this.openApiSpecPath = openApiSpecPath;
-    }
-
-    /**
-     * Checks if GOST gateway should be used.
-     *
-     * @return true if GOST gateway should be used
-     */
-    public boolean isUseGost() {
-        return useGost;
-    }
-
-    /**
-     * Sets whether GOST gateway should be used.
-     *
-     * @param useGost true to use GOST gateway
-     */
-    public void setUseGost(boolean useGost) {
-        this.useGost = useGost;
-    }
-
-    /**
-     * Gets the attacker token for BOLA testing.
-     *
-     * @return The attacker token
-     */
-    public String getAttackerToken() {
-        return attackerToken;
-    }
-
-    /**
-     * Sets the attacker token for BOLA testing.
-     *
-     * @param attackerToken The attacker token
-     */
-    public void setAttackerToken(String attackerToken) {
-        this.attackerToken = attackerToken;
-    }
-
-    /**
-     * Gets the victim token for BOLA testing.
-     *
-     * @return The victim token
-     */
-    public String getVictimToken() {
-        return victimToken;
-    }
-
-    /**
-     * Sets the victim token for BOLA testing.
-     *
-     * @param victimToken The victim token
-     */
-    public void setVictimToken(String victimToken) {
-        this.victimToken = victimToken;
-    }
 
     /**
      * Enumeration of supported output formats.

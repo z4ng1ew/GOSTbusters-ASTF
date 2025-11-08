@@ -1,0 +1,15 @@
+targetUrl: https://sbank.open.bankingapi.ru
+openApiSpecPath: https://sbank.open.bankingapi.ru/openapi.json
+clientId: ТВОЙ_CLIENT_ID_ОТ_ОРГАНИЗАТОРОВ
+clientSecret: ТВОЙ_CLIENT_SECRET_ОТ_ОРГАНИЗАТОРОВ
+useGost: false
+threads: 10
+timeoutMinutes: 5
+enabledTestCases:
+  - bola
+  - ssrf
+  - excessive-data
+  - security-misconfig
+  - improper-inventory
+outputFormat: html
+outputFile: target/reports/sbank-report.html

@@ -34,12 +34,12 @@ import okhttp3.ResponseBody;
  * <p>
  * This class provides a robust HTTP client implementation that supports:
  * <ul>
- *   <li>All common HTTP methods (GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD)</li>
- *   <li>Various authentication methods</li>
- *   <li>Cookie handling</li>
- *   <li>Proxy configuration</li>
- *   <li>Connection pooling and timeout management</li>
- *   <li>Response processing with headers</li>
+ * <li>All common HTTP methods (GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD)</li>
+ * <li>Various authentication methods</li>
+ * <li>Cookie handling</li>
+ * <li>Proxy configuration</li>
+ * <li>Connection pooling and timeout management</li>
+ * <li>Response processing with headers</li>
  * </ul>
  * </p>
  */
@@ -50,7 +50,7 @@ public class HttpClient {
     private final ScanConfig config;
     private final Map<String, String> defaultHeaders;
     private final Map<String, List<Cookie>> cookieStore = new HashMap<>();
-    
+
     // ✅ ДОБАВЛЕНО: Поле для хранения последнего статус-кода
     private int lastStatusCode = 0;
 
@@ -87,8 +87,7 @@ public class HttpClient {
 
     /**
      * ✅ ДОБАВЛЕНО: Метод получения последнего статус-кода
-     * 
-     * @return Последний HTTP статус-код, полученный в результате выполнения запроса
+     * * @return Последний HTTP статус-код, полученный в результате выполнения запроса
      */
     public int getLastStatusCode() {
         return lastStatusCode;
@@ -99,11 +98,14 @@ public class HttpClient {
      *
      * @param url The target URL
      * @param headers Additional headers to include
-     * @return The response body as a string
+     * @return The full response object (HttpResponse)
      * @throws IOException If the request fails
      */
-    public String get(String url, Map<String, String> headers) throws IOException {
-        return executeRequest(createRequest(url, "GET", headers, null, null));
+    public HttpResponse get(String url, Map<String, String> headers) throws IOException {
+        Request request = createRequest(url, "GET", headers, null, null);
+        // ✅ ПРАВКА 2: Явное присвоение и возврат
+        HttpResponse response = executeRequest(request); 
+        return response;
     }
 
     /**
@@ -113,13 +115,14 @@ public class HttpClient {
      * @param headers Additional headers to include
      * @param contentType The content type of the request
      * @param body The request body
-     * @return The response body as a string
+     * @return The full response object (HttpResponse)
      * @throws IOException If the request fails
      */
-    public String post(String url, Map<String, String> headers, String contentType, String body) throws IOException {
+    public HttpResponse post(String url, Map<String, String> headers, String contentType, String body) throws IOException {
         MediaType mediaType = MediaType.parse(contentType);
         RequestBody requestBody = RequestBody.create(body, mediaType);
-        return executeRequest(createRequest(url, "POST", headers, mediaType, requestBody));
+        Request request = createRequest(url, "POST", headers, mediaType, requestBody);
+        return executeRequest(request);
     }
 
     /**
@@ -129,43 +132,40 @@ public class HttpClient {
      * @param headers Additional headers to include
      * @param contentType The content type of the request
      * @param body The request body
-     * @return The response body as a string
+     * @return The full response object (HttpResponse)
      * @throws IOException If the request fails
      */
-    public String put(String url, Map<String, String> headers, String contentType, String body) throws IOException {
+    public HttpResponse put(String url, Map<String, String> headers, String contentType, String body) throws IOException {
         MediaType mediaType = MediaType.parse(contentType);
         RequestBody requestBody = RequestBody.create(body, mediaType);
-        return executeRequest(createRequest(url, "PUT", headers, mediaType, requestBody));
+        Request request = createRequest(url, "PUT", headers, mediaType, requestBody);
+        return executeRequest(request);
     }
 
     /**
-     * ✅ УЛУЧШЕНО: Метод DELETE с правильной обработкой
+     * Makes a DELETE request to the specified URL.
+     *
+     * @param url The target URL
+     * @param headers Additional headers to include
+     * @return The full response object (HttpResponse)
+     * @throws IOException If the request fails
      */
-    public String delete(String url, Map<String, String> headers) throws IOException {
+    public HttpResponse delete(String url, Map<String, String> headers) throws IOException {
         Request request = createRequest(url, "DELETE", headers, null, null);
-        try (Response response = client.newCall(request).execute()) {
-            // ✅ ОБНОВЛЕНО: Сохраняем статус-код
-            this.lastStatusCode = response.code();
-            if (response.body() != null) {
-                return response.body().string();
-            }
-            return "";
-        }
+        return executeRequest(request);
     }
 
     /**
-     * ✅ ДОБАВЛЕНО: Метод OPTIONS для получения информации о поддерживаемых методах
+     * Makes an OPTIONS request to the specified URL.
+     *
+     * @param url The target URL
+     * @param headers Additional headers to include
+     * @return The full response object (HttpResponse)
+     * @throws IOException If the request fails
      */
-    public String options(String url, Map<String, String> headers) throws IOException {
+    public HttpResponse options(String url, Map<String, String> headers) throws IOException {
         Request request = createRequest(url, "OPTIONS", headers, null, null);
-        try (Response response = client.newCall(request).execute()) {
-            // ✅ ОБНОВЛЕНО: Сохраняем статус-код
-            this.lastStatusCode = response.code();
-            if (response.body() != null) {
-                return response.body().string();
-            }
-            return "";
-        }
+        return executeRequest(request);
     }
 
     /**
@@ -175,13 +175,14 @@ public class HttpClient {
      * @param headers Additional headers to include
      * @param contentType The content type of the request
      * @param body The request body
-     * @return The response body as a string
+     * @return The full response object (HttpResponse)
      * @throws IOException If the request fails
      */
-    public String patch(String url, Map<String, String> headers, String contentType, String body) throws IOException {
+    public HttpResponse patch(String url, Map<String, String> headers, String contentType, String body) throws IOException {
         MediaType mediaType = MediaType.parse(contentType);
         RequestBody requestBody = RequestBody.create(body, mediaType);
-        return executeRequest(createRequest(url, "PATCH", headers, mediaType, requestBody));
+        Request request = createRequest(url, "PATCH", headers, mediaType, requestBody);
+        return executeRequest(request);
     }
 
     /**
@@ -189,25 +190,19 @@ public class HttpClient {
      *
      * @param url The target URL
      * @param headers Additional headers to include
-     * @return The response headers
+     * @return The full response object (HttpResponse)
      * @throws IOException If the request fails
      */
-    public Map<String, List<String>> head(String url, Map<String, String> headers) throws IOException {
-        Response response = client.newCall(createRequest(url, "HEAD", headers, null, null)).execute();
-        try {
-            // ✅ ОБНОВЛЕНО: Сохраняем статус-код
-            this.lastStatusCode = response.code();
-            return extractHeaders(response);
-        } finally {
-            response.close();
-        }
+    public HttpResponse head(String url, Map<String, String> headers) throws IOException {
+        Request request = createRequest(url, "HEAD", headers, null, null);
+        return executeRequest(request);
     }
 
     /**
-     * ✅ ДОБАВЛЕНО: Универсальный метод для выполнения HTTP запросов
+     * ✅ ОБНОВЛЕНО: Универсальный метод для выполнения HTTP запросов
      */
-    public String request(String method, String url, Map<String, String> headers, 
-                         String contentType, String body) throws IOException {
+    public HttpResponse request(String method, String url, Map<String, String> headers,
+                               String contentType, String body) throws IOException {
         MediaType mediaType = contentType != null ? MediaType.parse(contentType) : null;
         RequestBody requestBody = null;
 
@@ -219,30 +214,36 @@ public class HttpClient {
         return executeRequest(request);
     }
 
-    /**
-     * ✅ ДОБАВЛЕНО: Метод для получения статус-кода ответа
+    /*
+     * ❌ ПРАВКА 1: МЕТОД getStatusCode УДАЛЕН.
+     * Его функциональность заменяется вызовом getFullResponse(..).getStatusCode().
      */
-    public int getStatusCode(String url, Map<String, String> headers) throws IOException {
-        Request request = createRequest(url, "GET", headers, null, null);
-        try (Response response = client.newCall(request).execute()) {
-            // ✅ ОБНОВЛЕНО: Сохраняем статус-код
-            this.lastStatusCode = response.code();
-            return response.code();
-        }
-    }
 
     /**
-     * ✅ ДОБАВЛЕНО: Метод для получения полного ответа (код + заголовки + тело)
+     * Метод для получения полного ответа (код + заголовки + тело)
      */
     public HttpResponse getFullResponse(String url, Map<String, String> headers) throws IOException {
         Request request = createRequest(url, "GET", headers, null, null);
-        try (Response response = client.newCall(request).execute()) {
-            // ✅ ОБНОВЛЕНО: Сохраняем статус-код
-            this.lastStatusCode = response.code();
-            String body = response.body() != null ? response.body().string() : "";
-            Map<String, List<String>> responseHeaders = extractHeaders(response);
-            return new HttpResponse(response.code(), responseHeaders, body);
+        return executeRequest(request);
+    }
+
+    /**
+     * ✅ НОВЫЙ МЕТОД: Преобразует okhttp3.Response в наш внутренний HttpResponse
+     */
+    public HttpResponse convertResponse(okhttp3.Response okHttpResponse) throws IOException {
+        int statusCode = okHttpResponse.code();
+        String body = okHttpResponse.body() != null ? okHttpResponse.body().string() : "";
+
+        // Извлекаем заголовки
+        Map<String, List<String>> headers = new HashMap<>();
+        for (String name : okHttpResponse.headers().names()) {
+            headers.put(name, okHttpResponse.headers(name));
         }
+
+        // ✅ ОБНОВЛЕНО: Сохраняем статус-код
+        this.lastStatusCode = statusCode;
+
+        return new HttpResponse(statusCode, headers, body);
     }
 
     /**
@@ -340,20 +341,23 @@ public class HttpClient {
     }
 
     /**
-     * Executes a request and returns the response body as a string.
+     * ✅ ОБНОВЛЕНО: Executes a request and returns the full HttpResponse object.
      *
      * @param request The HTTP request to execute
-     * @return The response body as a string
+     * @return The full response object (HttpResponse)
      * @throws IOException If the request fails
      */
-    private String executeRequest(Request request) throws IOException {
-        try (Response response = client.newCall(request).execute()) {
-            // ✅ ОБНОВЛЕНО: Сохраняем статус-код
+    private HttpResponse executeRequest(Request request) throws IOException {
+        try (okhttp3.Response response = client.newCall(request).execute()) {
+            // ✅ СОХРАНЯЕМ статус-код
             this.lastStatusCode = response.code();
-            if (response.body() != null) {
-                return response.body().string();
-            }
-            return "";
+
+            String body = response.body() != null ? response.body().string() : "";
+
+            // Извлекаем заголовки
+            Map<String, List<String>> headers = extractHeaders(response);
+
+            return new HttpResponse(response.code(), headers, body);
         }
     }
 
@@ -416,7 +420,7 @@ public class HttpClient {
     }
 
     /**
-     * ✅ ДОБАВЛЕНО: Класс для представления полного HTTP ответа
+     * Класс для представления полного HTTP ответа
      */
     public static class HttpResponse {
         private final int statusCode;

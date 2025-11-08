@@ -1,0 +1,14 @@
+targetUrl: https://abank.open.bankingapi.ru
+openApiSpecPath: https://abank.open.bankingapi.ru/openapi.json
+clientId: team179
+clientSecret: JJqqH33ePjnfCMlyHFfz9Px09SMWvzhO
+bankId: abank
+enabledTestCases:
+  - bola
+  - excessive-data
+  - security-misconfig
+threads: 5
+timeoutMinutes: 3
+outputFormat: html
+outputFile: target/reports/abank-report.html
+verbose: true
