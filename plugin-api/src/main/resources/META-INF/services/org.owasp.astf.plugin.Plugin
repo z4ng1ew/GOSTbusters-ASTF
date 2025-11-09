@@ -1,10 +1,2 @@
-org.owasp.astf.testcases.BolaTestCase
-org.owasp.astf.testcases.BrokenAuthenticationTestCase
-org.owasp.astf.testcases.ExcessiveDataExposureTestCase
-org.owasp.astf.testcases.RateLimitBypassTestCase
-org.owasp.astf.testcases.FunctionLevelAuthTestCase
-org.owasp.astf.testcases.MassAssignmentTestCase
-org.owasp.astf.testcases.SSRFTestCase
-org.owasp.astf.testcases.SecurityMisconfigurationTestCase
-org.owasp.astf.testcases.ImproperInventoryManagementTestCase
-org.owasp.astf.testcases.UnsafeConsumptionTestCase
+com.example.plugins.ExampleBolaPlugin
+com.example.plugins.ExampleSsrfPlugin

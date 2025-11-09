@@ -4,6 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- ✅ ИСПРАВЛЕНО: Правильный родительский POM -->
     <parent>
         <groupId>org.gostbusters</groupId>
         <artifactId>gostbusters-astf</artifactId>
@@ -16,42 +17,53 @@
     <name>GOSTbusters ASTF Plugin API</name>
     <description>API for developing plugins for the ASTF framework</description>
 
+    <!-- ✅ ИСПРАВЛЕНО: Удалены дублирующиеся версии из properties -->
+    <properties>
+        <!-- ✅ НЕТ: Все версии из родительского POM -->
+    </properties>
+
     <dependencies>
-        <!-- ✅ ДОБАВЛЕНО: Зависимость от core для моделей -->
+        <!-- ✅ ИСПРАВЛЕНО: Зависимости от основного проекта -->
         <dependency>
             <groupId>org.gostbusters</groupId>
-            <artifactId>gostbusters-astf-core</artifactId>
+            <artifactId>gostbusters-astf</artifactId>
             <version>1.0-SNAPSHOT</version>
+            <classifier>core</classifier> <!-- ✅ Если core выделен в отдельный JAR -->
+            <scope>provided</scope> <!-- ✅ Только для компиляции -->
         </dependency>
 
-        <!-- ✅ Джексон для JSON -->
+        <!-- ✅ ИСПРАВЛЕНО: Зависимости с версиями через родительский POM -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+            <!-- ✅ НЕТ ВЕРСИИ: Будет из родительского dependencyManagement -->
         </dependency>
-
-        <!-- ✅ Логирование -->
+        
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
+            <!-- ✅ НЕТ ВЕРСИИ: Будет из родительского dependencyManagement -->
         </dependency>
 
-        <!-- ✅ Тесты -->
+        <!-- ✅ ИСПРАВЛЕНО: Тестовые зависимости с версиями -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit.version}</version> <!-- ✅ ИСПОЛЬЗУЕМ ИЗ РОДИТЕЛЯ -->
             <scope>test</scope>
         </dependency>
         
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version> <!-- ✅ ИСПОЛЬЗУЕМ ИЗ РОДИТЕЛЯ -->
             <scope>test</scope>
         </dependency>
         
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version> <!-- ✅ ИСПОЛЬЗУЕМ ИЗ РОДИТЕЛЯ -->
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -68,7 +80,7 @@
                 </configuration>
             </plugin>
 
-            <!-- ✅ Генерация sources JAR -->
+            <!-- ✅ ДОБАВЛЕНО: Генерация sources JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
@@ -83,7 +95,7 @@
                 </executions>
             </plugin>
 
-            <!-- ✅ Генерация javadoc JAR -->
+            <!-- ✅ ДОБАВЛЕНО: Генерация javadoc JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
@@ -96,9 +108,6 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <doclint>none</doclint>
-                </configuration>
             </plugin>
         </plugins>
     </build>
