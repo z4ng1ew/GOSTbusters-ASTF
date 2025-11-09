@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"org.owasp.astf.plugin"},{"l":"org.owasp.astf.shared"},{"l":"org.owasp.astf.shared.result"}];updateSearchResults();
