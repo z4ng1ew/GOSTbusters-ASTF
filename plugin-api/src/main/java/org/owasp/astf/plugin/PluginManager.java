@@ -1,118 +1,116 @@
 package org.owasp.astf.plugin;
 
-import org.owasp.astf.shared.EndpointInfo;
-import org.owasp.astf.shared.http.HttpClient;
-import org.owasp.astf.shared.result.Finding;
-import org.owasp.astf.testcases.TestCase;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.stream.Collectors;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.owasp.astf.core.config.ScanConfig;
+import org.owasp.astf.core.http.HttpClient;
+import org.owasp.astf.core.result.Finding;
 
 /**
- * Manages the lifecycle of security test plugins.
- * <p>
- * This class is responsible for dynamically loading plugin JAR files,
- * discovering {@link TestCase} implementations within them, and providing
- * them to the scanner engine.
- * </p>
+ * Manager for loading and managing security test plugins.
+ * 
+ * This class uses the Service Provider Interface (SPI) pattern to dynamically
+ * load security test plugins at runtime. Plugins are discovered through the
+ * META-INF/services mechanism and can be used to extend the framework's
+ * vulnerability detection capabilities.
+ * 
+ * @see java.util.ServiceLoader
  */
 public class PluginManager {
+    private static final Logger logger = LogManager.getLogger(PluginManager.class);
 
     /**
-     * Loads security test cases from a list of plugin JAR file paths.
+     * Loads all available plugins from the classpath.
      *
-     * @param jarPaths A list of file paths to plugin JAR files.
-     * @return A list of {@link TestCase} instances loaded from the plugins.
-     * @throws RuntimeException if there is an error loading the plugins.
+     * @return A list of discovered plugins
      */
-    public List<TestCase> loadPluginsFromJars(List<String> jarPaths) {
-        List<TestCase> loadedTestCases = new ArrayList<>();
-
-        if (jarPaths == null || jarPaths.isEmpty()) {
-            System.out.println("🔍 No plugin JARs specified. Skipping plugin loading.");
-            return loadedTestCases;
-        }
-
-        System.out.println("🔌 Loading " + jarPaths.size() + " plugin(s)...");
-
-        for (String jarPathStr : jarPaths) {
-            File jarFile = new File(jarPathStr);
-            if (!jarFile.exists() || !jarFile.isFile() || !jarFile.canRead()) {
-                System.err.println("❌ Plugin file does not exist or is not readable: " + jarPathStr);
-                continue; // Skip invalid files
+    public static List<Plugin> loadPlugins() {
+        List<Plugin> plugins = new ArrayList<>();
+        
+        try {
+            ServiceLoader<Plugin> loader = ServiceLoader.load(Plugin.class);
+            
+            for (Plugin plugin : loader) {
+                plugins.add(plugin);
+                logger.info("🔌 Plugin loaded: {} - {}", plugin.getId(), plugin.getName());
             }
-
-            try {
-                // 1. Создаем URLClassLoader для конкретного JAR
-                URL jarUrl = jarFile.toURI().toURL();
-                URLClassLoader loader = new URLClassLoader(new URL[]{jarUrl}, getClass().getClassLoader());
-
-                // 2. Используем ServiceLoader с этим конкретным ClassLoader
-                ServiceLoader<TestCase> serviceLoader = ServiceLoader.load(TestCase.class, loader);
-
-                // 3. Собираем все TestCase из этого JAR
-                int jarTestCaseCount = 0;
-                for (TestCase testCase : serviceLoader) {
-                    loadedTestCases.add(testCase);
-                    System.out.println("✅ Loaded plugin: " + testCase.getId() + " - " + testCase.getName());
-                    jarTestCaseCount++;
-                }
-
-                if (jarTestCaseCount == 0) {
-                    System.out.println("⚠️ No TestCase implementations found in plugin JAR: " + jarPathStr);
-                } else {
-                    System.out.println("📊 Found " + jarTestCaseCount + " test case(s) in " + jarPathStr);
-                }
-
-            } catch (MalformedURLException e) {
-                System.err.println("❌ Invalid JAR URL: " + jarPathStr + " - " + e.getMessage());
-            } catch (Exception e) {
-                System.err.println("❌ Error loading plugin from JAR: " + jarPathStr + " - " + e.getMessage());
-                e.printStackTrace(); // Выводим стек трейс для отладки
+            
+            if (plugins.isEmpty()) {
+                logger.info("ℹ️ No plugins found in classpath. Using built-in test cases only.");
+            } else {
+                logger.info("✅ Loaded {} plugins from classpath", plugins.size());
             }
+            
+        } catch (Exception e) {
+            logger.error("❌ Error loading plugins: {}", e.getMessage());
+            logger.debug("Plugin loading error details:", e);
         }
-
-        System.out.println("✅ Plugin loading completed. Total loaded: " + loadedTestCases.size());
-        return loadedTestCases;
+        
+        return plugins;
     }
 
     /**
-     * Demonstrates how a plugin test case might be implemented.
-     * This is an example that could reside inside a separate plugin JAR.
-     * It's included here for reference on how plugins integrate.
+     * Executes all plugins against the specified endpoint and client.
+     *
+     * @param endpoint The endpoint to test
+     * @param client The HTTP client to use
+     * @param config The scan configuration
+     * @return A list of findings from all plugins
      */
-    public static class ExamplePluginTestCase implements TestCase {
-
-        @Override
-        public String getId() {
-            return "EXAMPLE_PLUGIN";
+    public static List<Finding> executeAllPlugins(EndpointInfo endpoint, HttpClient client, ScanConfig config) {
+        List<Finding> allFindings = new ArrayList<>();
+        
+        List<Plugin> plugins = loadPlugins();
+        
+        for (Plugin plugin : plugins) {
+            try {
+                logger.debug("Executing plugin {} on endpoint {}", plugin.getId(), endpoint.getPath());
+                
+                List<Finding> pluginFindings = plugin.execute(endpoint, client);
+                allFindings.addAll(pluginFindings);
+                
+                if (!pluginFindings.isEmpty()) {
+                    logger.info("Plugin {} found {} issues on {}", 
+                        plugin.getName(), pluginFindings.size(), endpoint.getPath());
+                }
+                
+            } catch (Exception e) {
+                logger.error("Error executing plugin {}: {}", plugin.getName(), e.getMessage());
+                logger.debug("Plugin execution error details:", e);
+            }
         }
+        
+        return allFindings;
+    }
 
-        @Override
-        public String getName() {
-            return "Example Plugin Test Case";
-        }
+    /**
+     * Filters plugins based on scan configuration.
+     *
+     * @param plugins The list of all available plugins
+     * @param config The scan configuration
+     * @return A list of plugins that are enabled in the configuration
+     */
+    public static List<Plugin> filterPlugins(List<Plugin> plugins, ScanConfig config) {
+        List<String> enabledIds = config.getEnabledTestCaseIds();
+        List<String> disabledIds = config.getDisabledTestCaseIds();
 
-        @Override
-        public String getDescription() {
-            return "An example test case loaded from a plugin JAR.";
-        }
-
-        @Override
-        public List<Finding> execute(EndpointInfo endpoint, HttpClient client) {
-            // Пример простой проверки - замените логикой вашего плагина
-            List<Finding> findings = new ArrayList<>();
-            // Например, проверка на определённый заголовок или паттерн в ответе
-            if (endpoint.getPath().toLowerCase().contains("test")) {
-                findings.add(new Finding(
-                    getId(),
-                    "Example Plugin Finding",
-                    "This is a demonstration finding from a plugin.",
-                    org.owasp.astf.shared.result.Severity.INFO,
-                    endpoint.getFullUrl(),
+        return plugins.stream()
+            .filter(plugin -> {
+                String pluginId = plugin.getId();
+                
+                // If specific IDs are enabled, only include those
+                if (!enabledIds.isEmpty()) {
+                    return enabledIds.contains(pluginId);
+                }
+                
+                // Otherwise exclude disabled ones
+                return !disabledIds.contains(pluginId);
+            })
+            .collect(Collectors.toList());
+    }
+}

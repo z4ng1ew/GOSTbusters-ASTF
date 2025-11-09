@@ -1,1 +1,0 @@
-typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"org.owasp.astf.shared","l":"EndpointInfo"},{"p":"org.owasp.astf.shared.result","l":"Finding"},{"p":"org.owasp.astf.plugin","l":"Plugin"},{"p":"org.owasp.astf.plugin","l":"PluginLoader"}];updateSearchResults();
