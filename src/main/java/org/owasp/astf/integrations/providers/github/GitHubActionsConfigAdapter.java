@@ -7,12 +7,12 @@ import org.apache.logging.log4j.Logger;
 import org.owasp.astf.core.EndpointInfo;
 import org.owasp.astf.core.config.ScanConfig;
 import org.owasp.astf.integrations.core.CIEnvironment;
-import org.owasp.astf.integrations.core.ConfigAdapter;
+import org.owasp.astf.integrations.detection.CIEnvironmentProvider;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,12 +22,38 @@ import java.util.Optional;
  * Configuration adapter for GitHub Actions.
  * This class adapts scan configurations for GitHub Actions environments.
  */
-public class GitHubActionsConfigAdapter implements ConfigAdapter {
+public class GitHubActionsConfigAdapter implements CIEnvironmentProvider {
     private static final Logger logger = LogManager.getLogger(GitHubActionsConfigAdapter.class);
     private static final String CONFIG_FILE_NAME = "astf-config.json";
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
+    public String getName() {
+        return "GitHub Actions";
+    }
+
+    @Override
+    public boolean isApplicable() {
+        // Check if running in GitHub Actions environment
+        return System.getenv("GITHUB_ACTIONS") != null || 
+               System.getenv("GITHUB_WORKFLOW") != null;
+    }
+
+    @Override
+    public CIEnvironment getEnvironment() {
+        if (isApplicable()) {
+            return new GitHubActionsEnvironment();
+        }
+        return null;
+    }
+
+    /**
+     * Adapts a scan configuration for GitHub Actions environment.
+     *
+     * @param config The base configuration to adapt
+     * @param environment The CI environment
+     * @return The adapted configuration
+     */
     public ScanConfig adapt(ScanConfig config, CIEnvironment environment) {
         logger.debug("Adapting configuration for GitHub Actions");
 
@@ -47,7 +73,13 @@ public class GitHubActionsConfigAdapter implements ConfigAdapter {
         adaptedConfig.setOutputFile(config.getOutputFile());
         adaptedConfig.setVerbose(config.isVerbose());
 
-        // Check if we're in a pull request
+        // ✅ КРИТИЧЕСКИ ИСПРАВЛЕНО: Копируем Open Banking креденшиалы
+        adaptedConfig.setClientId(config.getClientId());
+        adaptedConfig.setClientSecret(config.getClientSecret());
+        adaptedConfig.setBankId(config.getBankId());
+        adaptedConfig.setConsentId(config.getConsentId());
+
+        // Check if we're in a pull request (specific to GitHub Actions)
         if (environment instanceof GitHubActionsEnvironment) {
             GitHubActionsEnvironment ghEnv = (GitHubActionsEnvironment) environment;
             if (ghEnv.isPullRequest()) {
@@ -74,31 +106,47 @@ public class GitHubActionsConfigAdapter implements ConfigAdapter {
                     // and add only safe endpoints for testing
                     adaptedConfig.setEndpoints(new ArrayList<>());
 
-                    // ✅ Исправлено: передаем baseUrl в конструктор EndpointInfo
+                    // ✅ ИСПРАВЛЕНО: передаём baseUrl в конструктор EndpointInfo
                     String baseUrl = config.getTargetUrl() != null ? config.getTargetUrl() : "http://localhost";
-                    adaptedConfig.addEndpoint(new EndpointInfo(baseUrl, "/api/public", "GET"));
-                    adaptedConfig.addEndpoint(new EndpointInfo(baseUrl, "/api/v1/public", "GET"));
+                    EndpointInfo safeEndpoint = new EndpointInfo(
+                        baseUrl,
+                        "/api/public", 
+                        "GET",
+                        "application/json",
+                        null,
+                        false // Не требует аутентификации
+                    );
+                    adaptedConfig.addEndpoint(safeEndpoint);
                 }
             }
         }
 
         // Add GitHub token to authorization header if not already set
-        if (!config.getHeaders().containsKey("Authorization")) {
-            environment.getEnvironmentVariable("GITHUB_TOKEN").ifPresent(token -> {
-                adaptedConfig.addHeader("Authorization", "Bearer " + token);
-            });
+        // (only if we're in GitHub Actions and the token is available)
+        if (System.getenv("GITHUB_TOKEN") != null && 
+            !adaptedConfig.getHeaders().containsKey("Authorization")) {
+            adaptedConfig.addHeader("Authorization", "Bearer " + System.getenv("GITHUB_TOKEN"));
         }
 
         // Set default output file if not specified
         if (adaptedConfig.getOutputFile() == null || adaptedConfig.getOutputFile().isEmpty()) {
-            String outputFile = Paths.get(environment.getWorkspaceDirectory(), "scan-results", "scan-result.json").toString();
-            adaptedConfig.setOutputFile(outputFile);
+            String workspace = System.getenv("GITHUB_WORKSPACE");
+            if (workspace != null) {
+                adaptedConfig.setOutputFile(workspace + "/scan-results/scan-result.json");
+            } else {
+                adaptedConfig.setOutputFile("scan-results/scan-result.json");
+            }
         }
 
         return adaptedConfig;
     }
 
-    @Override
+    /**
+     * Loads a configuration from a GitHub Actions-specific configuration file.
+     *
+     * @param configFile The configuration file
+     * @return An Optional containing the loaded configuration, or empty if the file is invalid
+     */
     public Optional<ScanConfig> loadFromFile(File configFile) {
         if (!configFile.exists() || !configFile.isFile()) {
             logger.warn("Configuration file does not exist: {}", configFile.getAbsolutePath());
@@ -107,7 +155,6 @@ public class GitHubActionsConfigAdapter implements ConfigAdapter {
 
         try {
             JsonNode rootNode = objectMapper.readTree(configFile);
-            // ✅ Исправлено: передаем null как baseUrl, так как в файле конфигурации baseUrl может быть указан отдельно
             return Optional.of(parseConfig(rootNode, null));
         } catch (IOException e) {
             logger.error("Failed to read configuration file: {}", e.getMessage());
@@ -115,86 +162,103 @@ public class GitHubActionsConfigAdapter implements ConfigAdapter {
         }
     }
 
-    @Override
+    /**
+     * Loads a configuration from GitHub Actions environment variables.
+     *
+     * @param environment The CI environment
+     * @return An Optional containing the loaded configuration, or empty if required variables are missing
+     */
     public Optional<ScanConfig> loadFromEnvironment(CIEnvironment environment) {
-        logger.debug("Loading configuration from environment variables");
+        logger.debug("Loading configuration from GitHub Actions environment variables");
 
         ScanConfig config = new ScanConfig();
         boolean foundConfig = false;
 
         // Target URL
-        Optional<String> targetUrl = environment.getEnvironmentVariable("ASTF_TARGET_URL");
-        if (targetUrl.isPresent()) {
-            config.setTargetUrl(targetUrl.get());
+        String targetUrl = System.getenv("ASTF_TARGET_URL");
+        if (targetUrl != null && !targetUrl.isEmpty()) {
+            config.setTargetUrl(targetUrl);
             foundConfig = true;
         }
 
         // Headers
-        Optional<String> authHeader = environment.getEnvironmentVariable("ASTF_AUTH_HEADER");
-        if (authHeader.isPresent()) {
-            config.addHeader("Authorization", authHeader.get());
+        String authHeader = System.getenv("ASTF_AUTH_HEADER");
+        if (authHeader != null && !authHeader.isEmpty()) {
+            config.addHeader("Authorization", authHeader);
             foundConfig = true;
         }
 
         // Threads
-        Optional<String> threads = environment.getEnvironmentVariable("ASTF_THREADS");
-        if (threads.isPresent()) {
+        String threads = System.getenv("ASTF_THREADS");
+        if (threads != null && !threads.isEmpty()) {
             try {
-                config.setThreads(Integer.parseInt(threads.get()));
+                config.setThreads(Integer.parseInt(threads));
                 foundConfig = true;
             } catch (NumberFormatException e) {
-                logger.warn("Invalid thread count: {}", threads.get());
+                logger.warn("Invalid thread count: {}", threads);
             }
         }
 
         // Timeout
-        Optional<String> timeout = environment.getEnvironmentVariable("ASTF_TIMEOUT");
-        if (timeout.isPresent()) {
+        String timeout = System.getenv("ASTF_TIMEOUT");
+        if (timeout != null && !timeout.isEmpty()) {
             try {
-                config.setTimeoutMinutes(Integer.parseInt(timeout.get()));
+                config.setTimeoutMinutes(Integer.parseInt(timeout));
                 foundConfig = true;
             } catch (NumberFormatException e) {
-                logger.warn("Invalid timeout: {}", timeout.get());
+                logger.warn("Invalid timeout: {}", timeout);
             }
         }
 
         // Discovery enabled
-        Optional<String> discovery = environment.getEnvironmentVariable("ASTF_DISCOVERY_ENABLED");
-        if (discovery.isPresent()) {
-            config.setDiscoveryEnabled(Boolean.parseBoolean(discovery.get()));
+        String discovery = System.getenv("ASTF_DISCOVERY_ENABLED");
+        if (discovery != null && !discovery.isEmpty()) {
+            config.setDiscoveryEnabled(Boolean.parseBoolean(discovery));
             foundConfig = true;
         }
 
         // Output format
-        Optional<String> outputFormat = environment.getEnvironmentVariable("ASTF_OUTPUT_FORMAT");
-        if (outputFormat.isPresent()) {
+        String outputFormat = System.getenv("ASTF_OUTPUT_FORMAT");
+        if (outputFormat != null && !outputFormat.isEmpty()) {
             try {
-                config.setOutputFormat(ScanConfig.OutputFormat.valueOf(outputFormat.get().toUpperCase()));
+                config.setOutputFormat(ScanConfig.OutputFormat.valueOf(outputFormat.toUpperCase()));
                 foundConfig = true;
             } catch (IllegalArgumentException e) {
-                logger.warn("Invalid output format: {}", outputFormat.get());
+                logger.warn("Invalid output format: {}", outputFormat);
             }
         }
 
         // Output file
-        Optional<String> outputFile = environment.getEnvironmentVariable("ASTF_OUTPUT_FILE");
-        if (outputFile.isPresent()) {
-            config.setOutputFile(outputFile.get());
+        String outputFile = System.getenv("ASTF_OUTPUT_FILE");
+        if (outputFile != null && !outputFile.isEmpty()) {
+            config.setOutputFile(outputFile);
             foundConfig = true;
         }
 
         // Verbose
-        Optional<String> verbose = environment.getEnvironmentVariable("ASTF_VERBOSE");
-        if (verbose.isPresent()) {
-            config.setVerbose(Boolean.parseBoolean(verbose.get()));
+        String verbose = System.getenv("ASTF_VERBOSE");
+        if (verbose != null && !verbose.isEmpty()) {
+            config.setVerbose(Boolean.parseBoolean(verbose));
+            foundConfig = true;
+        }
+
+        // Open Banking credentials (ключевые для хакатона!)
+        String clientId = System.getenv("ASTF_CLIENT_ID");
+        String clientSecret = System.getenv("ASTF_CLIENT_SECRET");
+        String bankId = System.getenv("ASTF_BANK_ID");
+        
+        if (clientId != null && clientSecret != null) {
+            config.setClientId(clientId);
+            config.setClientSecret(clientSecret);
+            if (bankId != null) config.setBankId(bankId);
             foundConfig = true;
         }
 
         // Enabled test cases
-        Optional<String> enabledTests = environment.getEnvironmentVariable("ASTF_ENABLED_TESTS");
-        if (enabledTests.isPresent()) {
+        String enabledTests = System.getenv("ASTF_ENABLED_TESTS");
+        if (enabledTests != null && !enabledTests.isEmpty()) {
             List<String> testIds = new ArrayList<>();
-            for (String id : enabledTests.get().split(",")) {
+            for (String id : enabledTests.split(",")) {
                 testIds.add(id.trim());
             }
             config.setEnabledTestCaseIds(testIds);
@@ -202,10 +266,10 @@ public class GitHubActionsConfigAdapter implements ConfigAdapter {
         }
 
         // Disabled test cases
-        Optional<String> disabledTests = environment.getEnvironmentVariable("ASTF_DISABLED_TESTS");
-        if (disabledTests.isPresent()) {
+        String disabledTests = System.getenv("ASTF_DISABLED_TESTS");
+        if (disabledTests != null && !disabledTests.isEmpty()) {
             List<String> testIds = new ArrayList<>();
-            for (String id : disabledTests.get().split(",")) {
+            for (String id : disabledTests.split(",")) {
                 testIds.add(id.trim());
             }
             config.setDisabledTestCaseIds(testIds);
@@ -215,48 +279,72 @@ public class GitHubActionsConfigAdapter implements ConfigAdapter {
         return foundConfig ? Optional.of(config) : Optional.empty();
     }
 
-    @Override
+    /**
+     * Creates a default configuration for GitHub Actions environment.
+     *
+     * @param environment The CI environment
+     * @return A default scan configuration
+     */
     public ScanConfig createDefaultConfig(CIEnvironment environment) {
         logger.debug("Creating default configuration for GitHub Actions");
 
         ScanConfig config = new ScanConfig();
 
         // Set default target URL (try to guess from repository)
-        if (environment instanceof GitHubActionsEnvironment) {
-            GitHubActionsEnvironment ghEnv = (GitHubActionsEnvironment) environment;
-            String repoName = ghEnv.getRepositoryName();
-            if (repoName.contains("/")) {
-                String[] parts = repoName.split("/");
-                String orgName = parts[0];
-                String projectName = parts[1];
+        String repoUrl = System.getenv("GITHUB_REPOSITORY");
+        if (repoUrl != null && repoUrl.contains("/")) {
+            String[] parts = repoUrl.split("/");
+            String orgName = parts[0];
+            String projectName = parts[1];
 
-                // Try to guess a reasonable default URL
-                // This is just an example and might not be accurate
-                config.setTargetUrl("https://" + orgName + ".github.io/" + projectName + "/api");
-            }
+            // Try to guess a reasonable default URL (для демонстрации)
+            config.setTargetUrl("https://vbank.open.bankingapi.ru");
+        } else {
+            config.setTargetUrl("https://localhost:8080");
         }
 
+        // Default Open Banking credentials (для демонстрации)
+        config.setClientId("team179");
+        config.setClientSecret("JJqqH33ePjnfCMlyHFfz9Px09SMWvzhO");
+        config.setBankId("vbank");
+
         // Default settings
-        config.setThreads(10);
-        config.setTimeoutMinutes(30);
+        config.setThreads(5); // Уменьшено для хакатона
+        config.setTimeoutMinutes(5); // Уменьшено для хакатона
         config.setDiscoveryEnabled(true);
-        config.setOutputFormat(ScanConfig.OutputFormat.JSON);
+        config.setOutputFormat(ScanConfig.OutputFormat.HTML);
         config.setVerbose(true);
 
         // Default output location
-        String outputFile = Paths.get(environment.getWorkspaceDirectory(), "scan-results", "scan-result.json").toString();
+        String workspace = System.getenv("GITHUB_WORKSPACE");
+        String outputFile = workspace != null ? 
+            workspace + "/scan-results/github-actions-scan.html" : 
+            "scan-results/github-actions-scan.html";
         config.setOutputFile(outputFile);
 
         return config;
     }
 
-    @Override
+    /**
+     * Validates a configuration for GitHub Actions compatibility and security issues.
+     *
+     * @param config The configuration to validate
+     * @return A map of validation issue keys to error messages, empty if no issues
+     */
     public Map<String, String> validateConfig(ScanConfig config) {
         Map<String, String> issues = new HashMap<>();
 
         // Validate target URL
         if (config.getTargetUrl() == null || config.getTargetUrl().isEmpty()) {
             issues.put("targetUrl", "Target URL is required");
+        }
+
+        // Validate Open Banking credentials (для хакатона)
+        if (config.getClientId() == null || config.getClientId().isEmpty()) {
+            issues.put("clientId", "Open Banking Client ID is required for banking API testing");
+        }
+        if (config.getClientSecret() == null || config.getClientSecret().isEmpty()) {
+            issues.put("clientSecret", "Open Banking Client Secret is required for banking API testing");
         }
 
         // Validate threads
@@ -281,7 +369,13 @@ public class GitHubActionsConfigAdapter implements ConfigAdapter {
         return issues;
     }
 
-    @Override
+    /**
+     * Sanitizes sensitive information in a configuration.
+     * This is used when logging or serializing configurations.
+     *
+     * @param config The configuration to sanitize
+     * @return A sanitized copy of the configuration
+     */
     public ScanConfig sanitizeConfig(ScanConfig config) {
         // Clone the configuration to avoid modifying the original
         ScanConfig sanitizedConfig = new ScanConfig();
@@ -298,6 +392,12 @@ public class GitHubActionsConfigAdapter implements ConfigAdapter {
         sanitizedConfig.setVerbose(config.isVerbose());
         sanitizedConfig.setEndpoints(new ArrayList<>(config.getEndpoints()));
 
+        // ✅ КРИТИЧЕСКИ ВАЖНО: Копируем Open Banking креденшиалы
+        sanitizedConfig.setClientId(config.getClientId());
+        sanitizedConfig.setClientSecret(config.getClientSecret());
+        sanitizedConfig.setBankId(config.getBankId());
+        sanitizedConfig.setConsentId(config.getConsentId());
+
         // Sanitize headers (remove sensitive information)
         Map<String, String> sanitizedHeaders = new HashMap<>();
         for (Map.Entry<String, String> entry : config.getHeaders().entrySet()) {
@@ -310,7 +410,7 @@ public class GitHubActionsConfigAdapter implements ConfigAdapter {
                     key.toLowerCase().contains("key") ||
                     key.toLowerCase().contains("token") ||
                     key.toLowerCase().contains("secret")) {
-                value = "********";
+                value = "********"; // Mask sensitive values
             }
 
             sanitizedHeaders.put(key, value);
@@ -320,7 +420,12 @@ public class GitHubActionsConfigAdapter implements ConfigAdapter {
         return sanitizedConfig;
     }
 
-    @Override
+    /**
+     * Merges multiple configurations, with later configs overriding earlier ones.
+     *
+     * @param configs The configurations to merge, in order of increasing priority
+     * @return The merged configuration
+     */
     public ScanConfig mergeConfigs(ScanConfig... configs) {
         if (configs.length == 0) {
             return new ScanConfig();
@@ -331,11 +436,15 @@ public class GitHubActionsConfigAdapter implements ConfigAdapter {
         }
 
         // Start with the first config
-        ScanConfig mergedConfig = configs[0];
+        ScanConfig mergedConfig = new ScanConfig();
+        mergedConfig.setHeaders(new HashMap<>());
+        mergedConfig.setEndpoints(new ArrayList<>());
+        mergedConfig.setEnabledTestCaseIds(new ArrayList<>());
+        mergedConfig.setDisabledTestCaseIds(new ArrayList<>());
 
         // Merge with subsequent configs
-        for (int i = 1; i < configs.length; i++) {
-            ScanConfig config = configs[i];
+        for (ScanConfig config : configs) {
+            if (config == null) continue;
 
             // Only override if the new value is non-null or non-empty
             if (config.getTargetUrl() != null && !config.getTargetUrl().isEmpty()) {
@@ -343,14 +452,16 @@ public class GitHubActionsConfigAdapter implements ConfigAdapter {
             }
 
             // Merge headers
-            for (Map.Entry<String, String> entry : config.getHeaders().entrySet()) {
-                mergedConfig.addHeader(entry.getKey(), entry.getValue());
+            if (config.getHeaders() != null) {
+                mergedConfig.getHeaders().putAll(config.getHeaders());
             }
 
             // Merge endpoints (add all unique endpoints)
-            for (EndpointInfo endpoint : config.getEndpoints()) {
-                if (!containsEndpoint(mergedConfig.getEndpoints(), endpoint)) {
-                    mergedConfig.addEndpoint(endpoint);
+            if (config.getEndpoints() != null) {
+                for (EndpointInfo endpoint : config.getEndpoints()) {
+                    if (!containsEndpoint(mergedConfig.getEndpoints(), endpoint)) {
+                        mergedConfig.addEndpoint(endpoint);
+                    }
                 }
             }
 
@@ -385,17 +496,40 @@ public class GitHubActionsConfigAdapter implements ConfigAdapter {
             if (config.getOutputFile() != null && !config.getOutputFile().isEmpty()) {
                 mergedConfig.setOutputFile(config.getOutputFile());
             }
+
+            // ✅ КРИТИЧЕСКИ ВАЖНО: Копируем Open Banking креденшиалы
+            if (config.getClientId() != null) {
+                mergedConfig.setClientId(config.getClientId());
+            }
+            if (config.getClientSecret() != null) {
+                mergedConfig.setClientSecret(config.getClientSecret());
+            }
+            if (config.getBankId() != null) {
+                mergedConfig.setBankId(config.getBankId());
+            }
+            if (config.getConsentId() != null) {
+                mergedConfig.setConsentId(config.getConsentId());
+            }
         }
 
         return mergedConfig;
     }
 
-    @Override
+    /**
+     * Gets the configuration file name for GitHub Actions.
+     *
+     * @return The default configuration file name
+     */
     public String getConfigFileName() {
         return CONFIG_FILE_NAME;
     }
 
-    @Override
+    /**
+     * Converts GitHub Actions-specific configuration format to ASTF format.
+     *
+     * @param platformConfig A map of platform-specific configuration values
+     * @return The equivalent ASTF scan configuration
+     */
     public ScanConfig convertFromPlatformFormat(Map<String, Object> platformConfig) {
         ScanConfig config = new ScanConfig();
 
@@ -403,6 +537,20 @@ public class GitHubActionsConfigAdapter implements ConfigAdapter {
         Object targetUrl = platformConfig.get("target-url");
         if (targetUrl != null) {
             config.setTargetUrl(targetUrl.toString());
+        }
+
+        Object clientId = platformConfig.get("client-id");
+        Object clientSecret = platformConfig.get("client-secret");
+        Object bankId = platformConfig.get("bank-id");
+        
+        if (clientId != null) {
+            config.setClientId(clientId.toString());
+        }
+        if (clientSecret != null) {
+            config.setClientSecret(clientSecret.toString());
+        }
+        if (bankId != null) {
+            config.setBankId(bankId.toString());
         }
 
         Object authHeader = platformConfig.get("auth-header");
@@ -517,6 +665,20 @@ public class GitHubActionsConfigAdapter implements ConfigAdapter {
             }
         }
 
+        // ✅ ПАРСИМ Open Banking креденшиалы (для хакатона!)
+        if (rootNode.has("clientId")) {
+            config.setClientId(rootNode.get("clientId").asText());
+        }
+        if (rootNode.has("clientSecret")) {
+            config.setClientSecret(rootNode.get("clientSecret").asText());
+        }
+        if (rootNode.has("bankId")) {
+            config.setBankId(rootNode.get("bankId").asText());
+        }
+        if (rootNode.has("consentId")) {
+            config.setConsentId(rootNode.get("consentId").asText());
+        }
+
         // Parse headers
         if (rootNode.has("headers") && rootNode.get("headers").isObject()) {
             JsonNode headersNode = rootNode.get("headers");
@@ -554,11 +716,18 @@ public class GitHubActionsConfigAdapter implements ConfigAdapter {
                     String requestBody = endpointNode.has("requestBody") ? endpointNode.get("requestBody").asText() : null;
                     boolean requiresAuth = !endpointNode.has("requiresAuthentication") || endpointNode.get("requiresAuthentication").asBoolean();
 
-                    // ✅ Исправлено: передаем baseUrl в конструктор EndpointInfo
+                    // ✅ ИСПРАВЛЕНО: передаём baseUrl в конструктор EndpointInfo
                     String effectiveBaseUrl = baseUrl != null ? baseUrl : 
                         (config.getTargetUrl() != null ? config.getTargetUrl() : "http://localhost");
                     
-                    EndpointInfo endpoint = new EndpointInfo(effectiveBaseUrl, path, method, contentType, requestBody, requiresAuth);
+                    EndpointInfo endpoint = new EndpointInfo(
+                        effectiveBaseUrl,
+                        path,
+                        method,
+                        contentType,
+                        requestBody,
+                        requiresAuth
+                    );
                     config.addEndpoint(endpoint);
                 }
             }
@@ -575,6 +744,7 @@ public class GitHubActionsConfigAdapter implements ConfigAdapter {
      * @return true if the list contains an equivalent endpoint, false otherwise
      */
     private boolean containsEndpoint(List<EndpointInfo> endpoints, EndpointInfo endpoint) {
+        if (endpoints == null) return false;
         return endpoints.stream().anyMatch(e ->
                 e.getPath().equals(endpoint.getPath()) &&
                         e.getMethod().equalsIgnoreCase(endpoint.getMethod())

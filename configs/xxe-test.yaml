@@ -1,0 +1,12 @@
+# configs/xxe-test.yaml
+targetUrl: https://vbank.open.bankingapi.ru
+openApiSpecPath: https://vbank.open.bankingapi.ru/openapi.json
+clientId: team179
+clientSecret: JJqqH33ePjnfCMlyHFfz9Px09SMWvzhO
+bankId: vbank
+enabledTestCases:
+  - API7:2023-XXE  # ✅ Добавь XXE тест
+threads: 1
+timeoutMinutes: 1
+outputFile: target/reports/xxe-report.html
+verbose: true

@@ -6,8 +6,8 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.Paths;
-import io.swagger.v3.oas.models.responses.ApiResponse; // ✅ Одиночное число
-import io.swagger.v3.oas.models.responses.ApiResponses; // ✅ Множественное число
+import io.swagger.v3.oas.models.responses.ApiResponse;
+import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
 import org.apache.http.client.methods.HttpGet;
@@ -16,10 +16,10 @@ import org.apache.logging.log4j.Logger;
 import org.owasp.astf.core.EndpointInfo;
 import org.owasp.astf.core.config.ScanConfig;
 import org.owasp.astf.core.http.HttpClient;
-import org.owasp.astf.core.http.HttpResponse; // ✅ Импорт
+import org.owasp.astf.core.http.HttpResponse;
 import org.owasp.astf.core.result.Finding;
 import org.owasp.astf.core.result.Severity;
-import org.owasp.astf.openapi.OpenApiLoader; // ✅ Исправлено: OpenApiLoader, а не OpenApiLoader
+import org.owasp.astf.openapi.OpenApiLoader; // ✅ ИМПОРТ
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,7 +34,6 @@ import java.util.Set;
  * Compares actual API response against OpenAPI specification and looks for sensitive fields.
  */
 public class ExcessiveDataExposureTestCase implements TestCase {
-
     private static final Logger logger = LogManager.getLogger(ExcessiveDataExposureTestCase.class);
 
     private ScanConfig config;
@@ -65,7 +64,6 @@ public class ExcessiveDataExposureTestCase implements TestCase {
         SENSITIVE_KEYWORDS.add("email");
         SENSITIVE_KEYWORDS.add("phone");
         SENSITIVE_KEYWORDS.add("address");
-        // Add more as needed
     }
 
     @Override
@@ -104,6 +102,8 @@ public class ExcessiveDataExposureTestCase implements TestCase {
             return findings;
         }
 
+        System.out.println("🔍 Testing excessive data exposure on: " + endpoint.getMethod() + " " + endpoint.getPath());
+
         // Try to execute the request with the current session's authentication
         Map<String, String> headers = config.getHeaders() != null ? config.getHeaders() : Collections.emptyMap();
         try {
@@ -112,7 +112,7 @@ public class ExcessiveDataExposureTestCase implements TestCase {
 
             // We are interested in successful responses (200 OK) that contain data
             if (httpResponse.getStatusCode() == 200) {
-                String responseBody = httpResponse.getBody(); // ✅ ИСПРАВЛЕНО: getBody() вместо getResponseBody()
+                String responseBody = httpResponse.getResponseBody(); // ✅ ИСПРАВЛЕНО: getResponseBody() вместо getBody()
 
                 // 1. Check for sensitive keywords in the response
                 List<String> foundSensitiveFields = findSensitiveFieldsInResponse(responseBody);
@@ -129,35 +129,50 @@ public class ExcessiveDataExposureTestCase implements TestCase {
                         "Remove sensitive data from API responses. Use DTOs or serialization views to control what data is returned. " +
                         "Ensure that the API response schema in the OpenAPI spec accurately reflects the data returned."
                     ));
+                    System.out.println("🚨 SENSITIVE DATA FOUND: " + String.join(", ", foundSensitiveFields));
+                } else {
+                    System.out.println("✅ No sensitive data detected in response");
                 }
 
                 // 2. Validate response structure against OpenAPI spec if available
-                if (config.getOpenApiSpecPath() != null) {
-                    OpenAPI openAPI = OpenApiLoader.load(config.getOpenApiSpecPath()); // ✅ ИСПРАВЛЕНО: OpenApiLoader
-                    List<String> extraFields = validateResponseAgainstOpenApi(responseBody, endpoint, openAPI);
-                    if (!extraFields.isEmpty()) {
-                        findings.add(new Finding(
-                            getId(),
-                            "API Response Mismatch (API3:2023)",
-                            "API response contains fields not defined in OpenAPI spec: " + String.join(", ", extraFields) + "\n" +
-                            "Endpoint: " + endpoint.getFullUrl() + "\n" +
-                            "This indicates potential excessive data exposure or outdated documentation.",
-                            Severity.MEDIUM,
-                            getId(),
-                            endpoint.getFullUrl(),
-                            "Align the API response with the OpenAPI specification. " +
-                            "Either update the API to remove the extra fields or update the OpenAPI spec to document them."
-                        ));
+                if (config.getOpenApiSpecPath() != null) { // ✅ ИСПРАВЛЕНО: Убедись, что поле есть в ScanConfig
+                    try {
+                        OpenAPI openAPI = OpenApiLoader.load(config.getOpenApiSpecPath());
+                        List<String> extraFields = validateResponseAgainstOpenApi(responseBody, endpoint, openAPI);
+                        if (!extraFields.isEmpty()) {
+                            findings.add(new Finding(
+                                getId(),
+                                "API Response Mismatch (API3:2023)",
+                                "API response contains fields not defined in OpenAPI spec: " + String.join(", ", extraFields) + "\n" +
+                                "Endpoint: " + endpoint.getFullUrl() + "\n" +
+                                "This indicates potential excessive data exposure or outdated documentation.",
+                                Severity.MEDIUM,
+                                getId(),
+                                endpoint.getFullUrl(),
+                                "Align the API response with the OpenAPI specification. " +
+                                "Either update the API to remove the extra fields or update the OpenAPI spec to document them."
+                            ));
+                            System.out.println("📝 EXTRA FIELDS FOUND: " + String.join(", ", extraFields));
+                        } else {
+                            System.out.println("✅ Response matches OpenAPI specification");
+                        }
+                    } catch (Exception e) {
+                        logger.warn("OpenAPI validation failed for endpoint {}: {}", endpoint.getFullUrl(), e.getMessage());
+                        System.out.println("⚠️ OpenAPI validation skipped: " + e.getMessage());
                     }
+                } else {
+                    System.out.println("ℹ️ OpenAPI validation skipped (no spec path configured)");
                 }
 
             } else {
                 // Log non-200 responses but don't flag them as findings for this test
                 logger.debug("Endpoint {} returned status {}, skipping Excessive Data check.", endpoint.getFullUrl(), httpResponse.getStatusCode());
+                System.out.println("⏭️ Skipped (status " + httpResponse.getStatusCode() + ")");
             }
 
         } catch (Exception e) {
             logger.warn("Error during Excessive Data Exposure test for endpoint {}: {}", endpoint.getFullUrl(), e.getMessage());
+            System.out.println("❌ Test failed: " + e.getMessage());
             // Do not add a finding for technical errors during the test
         }
 

@@ -1,353 +1,242 @@
 package org.owasp.astf.cli;
 
 import org.owasp.astf.core.Scanner;
+import org.owasp.astf.core.config.ConfigLoader; // ✅ ИМПОРТ ДОБАВЛЕН
 import org.owasp.astf.core.config.ScanConfig;
 import org.owasp.astf.core.result.ScanResult;
 import org.owasp.astf.core.result.Finding;
 import org.owasp.astf.reporting.JsonReportGenerator;
 
-public class ASTFCli {
-    // ✅ ДОБАВЛЕНО: Глобальный флаг verbose для легкого доступа
-    private static boolean globalVerbose = false;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.Callable;
+
+/**
+ * Command Line Interface for the GOSTbusters API Security Testing Framework.
+ * 
+ * This CLI provides a unified interface for running API security scans with support for:
+ * - Configuration file loading (YAML/JSON)
+ * - Command-line parameter overrides
+ * - Open Banking Russia authentication
+ * - GOST gateway integration
+ * - Multi-bank API testing
+ * - Professional reporting
+ */
+@Command(
+    name = "astf",
+    description = "GOSTbusters API Security Testing Framework - OWASP API Top 10 2023 compliant scanner",
+    mixinStandardHelpOptions = true,
+    version = "1.0.0"
+)
+public class ASTFCli implements Callable<Integer> {
+    
+    @Option(names = {"-c", "--config"}, description = "Path to configuration file (YAML/JSON)")
+    private String configFile;
+
+    @Option(names = {"-t", "--target"}, description = "Target API URL")
+    private String targetUrl;
+
+    @Option(names = {"--client-id"}, description = "Open Banking client ID (e.g., team179)")
+    private String clientId;
+
+    @Option(names = {"--client-secret"}, description = "Open Banking client secret")
+    private String clientSecret;
+
+    @Option(names = {"--bank-id"}, description = "Bank ID for Open Banking (vbank, abank, sbank)")
+    private String bankId;
+
+    @Option(names = {"--gost"}, description = "Enable GOST gateway integration")
+    private boolean useGost = false;
+
+    @Option(names = {"--output"}, description = "Output file path (JSON, HTML, PDF)")
+    private String outputFile;
+
+    @Option(names = {"--format"}, description = "Output format (json, html, pdf)", defaultValue = "json")
+    private String outputFormat = "json";
+
+    @Option(names = {"--verbose", "-v"}, description = "Enable verbose logging")
+    private boolean verbose = false;
+
+    @Option(names = {"--threads"}, description = "Number of concurrent threads", defaultValue = "10")
+    private int threads = 10;
+
+    @Option(names = {"--timeout"}, description = "Scan timeout in minutes", defaultValue = "30")
+    private int timeoutMinutes = 30;
+
+    @Option(names = {"--openapi"}, description = "Path to OpenAPI specification file")
+    private String openApiSpecPath;
+
+    @Option(names = {"--auth-header"}, description = "Authentication header value")
+    private String authHeader;
 
     public static void main(String[] args) {
-        if (args.length == 0) {
-            printUsage();
-            System.exit(1);
-        }
+        CommandLine cmd = new CommandLine(new ASTFCli());
+        int exitCode = cmd.execute(args);
+        System.exit(exitCode);
+    }
 
-        // Проверяем команду scan
-        if (!"scan".equals(args[0])) {
-            System.out.println("❌ Unknown command: " + args[0]);
-            printUsage();
-            System.exit(1);
-        }
+    @Override
+    public Integer call() throws Exception {
+        System.out.println("🚀 GOSTbusters API Security Testing Framework (ASTF) v1.0");
+        System.out.println("   OWASP API Security Top 10 2023 compliant");
+        System.out.println("   Open Banking Russia v2.1 integration");
+        System.out.println("   GOST cryptographic standards support");
+        System.out.println();
 
         ScanConfig config = null;
+
         try {
-            config = parseArguments(args);
-            globalVerbose = config.isVerbose();
-            
-            // Установка значения по умолчанию для output file
-            if (config.getOutputFile() == null || config.getOutputFile().isEmpty()) {
-                config.setOutputFile("scan_results.json");
+            // ✅ ИСПРАВЛЕНО: Загрузка конфига из файла С ПОСЛЕДУЮЩИМ ПЕРЕОПРЕДЕЛЕНИЕМ CLI-ПАРАМЕТРАМИ
+            if (configFile != null) {
+                config = ConfigLoader.load(configFile); // ✅ Загрузка из YAML/JSON
+                System.out.println("✅ Configuration loaded from: " + configFile);
+            } else {
+                config = new ScanConfig(); // ✅ Пустая конфигурация для CLI-аргументов
+                System.out.println("📋 Using command-line configuration only");
             }
 
-            System.out.println("🚀 Starting API Security Scan");
-            System.out.println("🔗 Target: " + config.getTargetUrl());
+            // ✅ ПЕРЕОПРЕДЕЛЕНИЕ параметров из CLI (если указаны)
+            if (targetUrl != null) config.setTargetUrl(targetUrl);
+            if (clientId != null) config.setClientId(clientId);
+            if (clientSecret != null) config.setClientSecret(clientSecret);
+            if (bankId != null) config.setBankId(bankId);
+            if (outputFile != null) config.setOutputFile(outputFile);
+            if (outputFormat != null) config.setOutputFormat(outputFormat);
+            if (openApiSpecPath != null) config.setOpenApiSpecPath(openApiSpecPath);
+            if (authHeader != null) config.setAuthHeader(authHeader);
+            config.setUseGost(useGost);
+            config.setVerbose(verbose);
+            config.setThreads(threads);
+            config.setTimeoutMinutes(timeoutMinutes);
+
+            // ✅ ВАЛИДАЦИЯ КОНФИГУРАЦИИ
+            if (config.getTargetUrl() == null || config.getTargetUrl().isEmpty()) {
+                System.err.println("❌ ERROR: Target URL is required. Use --target or --config option.");
+                System.out.println("💡 Example: java -jar astf.jar --config configs/vbank.yaml");
+                System.out.println("💡 Or: java -jar astf.jar --target https://vbank.open.bankingapi.ru --client-id team179 --client-secret ...");
+                return 1;
+            }
+
+            // ✅ ПОКАЗ КОНФИГУРАЦИИ (для отладки)
+            System.out.println("🔍 Scan Configuration:");
+            System.out.println("   Target: " + config.getTargetUrl());
+            System.out.println("   Bank: " + (config.getBankId() != null ? config.getBankId() : "unknown"));
+            System.out.println("   GOST: " + config.isUseGost());
+            System.out.println("   Threads: " + config.getThreads());
+            System.out.println("   Timeout: " + config.getTimeoutMinutes() + " minutes");
+            System.out.println("   Verbose: " + config.isVerbose());
             if (config.getOpenApiSpecPath() != null) {
-                System.out.println("📄 OpenAPI: " + config.getOpenApiSpecPath());
-                // ✅ ДОБАВЛЕНО: Определяем формат OpenAPI файла
-                String openApiFormat = getOpenApiFormat(config.getOpenApiSpecPath());
-                System.out.println("📋 OpenAPI Format: " + openApiFormat);
+                System.out.println("   OpenAPI: " + config.getOpenApiSpecPath());
             }
-            if (config.isUseGost()) {
-                System.out.println("🌐 GOST Gateway: Enabled");
-            }
-            System.out.println("💾 Output: " + config.getOutputFile());
-            if (globalVerbose) {
-                System.out.println("🔍 Verbose Mode: Enabled - Detailed logging activated");
-            }
+            System.out.println();
 
-            // ✅ ДОБАВЛЕНО: Подробная информация в verbose mode
-            if (globalVerbose) {
-                logVerboseConfigInfo(config);
-            }
-
-            // Запуск сканера
+            // ✅ ЗАПУСК СКАНИРОВАНИЯ
+            System.out.println("🔍 Starting API security scan...");
             Scanner scanner = new Scanner(config);
-            ScanResult result = scanner.scan(); // ✅ Получаем результат
+            ScanResult results = scanner.scan();
+
+            // ✅ ВЫВОД РЕЗУЛЬТАТОВ
+            printScanResults(results);
+
+            // ✅ СОХРАНЕНИЕ ОТЧЁТА
+            if (config.getOutputFile() != null) {
+                saveReport(results, config.getOutputFile());
+            }
+
+            // ✅ ОПРЕДЕЛЕНИЕ СТАТУСА ВЫПОЛНЕНИЯ
+            long criticalCount = results.getFindings().stream()
+                .mapToLong(f -> f.getSeverity() == org.owasp.astf.core.result.Severity.CRITICAL ? 1 : 0).sum();
             
-            // ✅ Показываем результаты в консоли
-            printResults(result, globalVerbose);
-            
-            // ✅ Сохранение в файл
-            saveReport(result, config.getOutputFile(), globalVerbose);
-            
-            System.exit(0); // Успешное завершение
-            
+            if (criticalCount > 0) {
+                System.out.println("\n🚨 CRITICAL VULNERABILITIES FOUND!");
+                System.out.println("   Build should fail due to security issues.");
+                return 1; // Exit with error code
+            } else {
+                System.out.println("\n✅ Scan completed successfully!");
+                System.out.println("   No critical vulnerabilities detected.");
+                return 0; // Exit successfully
+            }
+
+        } catch (IOException e) {
+            System.err.println("❌ Configuration error: " + e.getMessage());
+            e.printStackTrace();
+            return 1;
         } catch (Exception e) {
-            System.err.println("❌ Error during scanning: " + e.getMessage());
-            if (globalVerbose || isVerbose(args)) {
-                System.err.println("🔍 Verbose Error Details:");
+            System.err.println("❌ Scan execution error: " + e.getMessage());
+            if (verbose) {
                 e.printStackTrace();
             } else {
-                System.err.println("💡 Use --verbose for detailed error information");
+                System.out.println("💡 Use --verbose for detailed error information");
             }
-            System.exit(1);
+            return 1;
         }
-    }
-
-    /**
-     * ✅ Парсит аргументы командной строки
-     */
-    private static ScanConfig parseArguments(String[] args) {
-        ScanConfig config = new ScanConfig();
-        
-        for (int i = 1; i < args.length; i++) {
-            switch (args[i]) {
-                case "--target":
-                    if (i + 1 < args.length) {
-                        config.setTargetUrl(args[++i]);
-                        System.out.println("✅ Set target: " + config.getTargetUrl());
-                    }
-                    break;
-                case "--auth-header":
-                    if (i + 1 < args.length) {
-                        config.setAuthHeader(args[++i]);
-                        System.out.println("✅ Set auth header: " + maskToken(config.getAuthHeader()));
-                    }
-                    break;
-                case "--openapi":
-                    if (i + 1 < args.length) {
-                        String openApiFile = args[++i];
-                        // ✅ ИСПРАВЛЕНИЕ: Проверяем существование файла и его формат
-                        if (isValidOpenApiFile(openApiFile)) {
-                            config.setOpenApiSpecPath(openApiFile);
-                            System.out.println("✅ Set OpenAPI spec: " + config.getOpenApiSpecPath());
-                        } else {
-                            System.err.println("❌ Invalid OpenAPI file: " + openApiFile + 
-                                " (must be .yaml, .yml, or .json and exist)");
-                        }
-                    }
-                    break;
-                case "--use-gost":
-                    config.setUseGost(true);
-                    System.out.println("✅ GOST gateway enabled");
-                    break;
-                case "--output-file":
-                    if (i + 1 < args.length) {
-                        config.setOutputFile(args[++i]);
-                        System.out.println("✅ Set output file: " + config.getOutputFile());
-                    }
-                    break;
-                case "--verbose":
-                    // ✅ ДОБАВЛЕНО: Поддержка --verbose с установкой системного свойства
-                    config.setVerbose(true);
-                    System.setProperty("astf.verbose", "true");
-                    System.out.println("✅ Verbose mode enabled");
-                    break;
-                case "--threads":
-                    if (i + 1 < args.length) {
-                        try {
-                            config.setThreads(Integer.parseInt(args[++i]));
-                            System.out.println("✅ Set threads: " + config.getThreads());
-                        } catch (NumberFormatException e) {
-                            System.err.println("⚠️  Invalid threads value: " + args[i]);
-                        }
-                    }
-                    break;
-                case "--timeout":
-                    if (i + 1 < args.length) {
-                        try {
-                            config.setTimeoutMinutes(Integer.parseInt(args[++i]));
-                            System.out.println("✅ Set timeout: " + config.getTimeoutMinutes() + " minutes");
-                        } catch (NumberFormatException e) {
-                            System.err.println("⚠️  Invalid timeout value: " + args[i]);
-                        }
-                    }
-                    break;
-                case "--output-format":
-                    if (i + 1 < args.length) {
-                        // ✅ ИСПРАВЛЕНИЕ: Преобразуем строку в enum с обработкой ошибок
-                        try {
-                            config.setOutputFormat(ScanConfig.OutputFormat.valueOf(args[++i].toUpperCase()));
-                            System.out.println("✅ Set output format: " + config.getOutputFormat());
-                        } catch (IllegalArgumentException e) {
-                            System.err.println("⚠️ Unsupported output format. Using JSON.");
-                            config.setOutputFormat(ScanConfig.OutputFormat.JSON);
-                        }
-                    }
-                    break;
-                default:
-                    // Игнорируем неизвестные аргументы
-                    System.out.println("⚠️  Unknown argument: " + args[i]);
-            }
-        }
-
-        // Проверка обязательных параметров
-        if (config.getTargetUrl() == null || config.getTargetUrl().isEmpty()) {
-            throw new IllegalArgumentException("Target URL is required (--target)");
-        }
-
-        return config;
-    }
-
-    /**
-     * ✅ ДОБАВЛЕНО: Логирует подробную информацию о конфигурации в verbose mode
-     */
-    private static void logVerboseConfigInfo(ScanConfig config) {
-        System.out.println("\n🔍 VERBOSE CONFIGURATION DETAILS:");
-        System.out.println("=================================");
-        System.out.println("Target URL: " + config.getTargetUrl());
-        System.out.println("OpenAPI Spec: " + (config.getOpenApiSpecPath() != null ? config.getOpenApiSpecPath() : "Not provided"));
-        System.out.println("GOST Gateway: " + (config.isUseGost() ? "Enabled" : "Disabled"));
-        System.out.println("Output File: " + config.getOutputFile());
-        System.out.println("Output Format: " + config.getOutputFormat());
-        System.out.println("Threads: " + config.getThreads());
-        System.out.println("Timeout: " + config.getTimeoutMinutes() + " minutes");
-        System.out.println("Discovery Enabled: " + config.isDiscoveryEnabled());
-        System.out.println("Max RPS: " + config.getMaxRequestsPerSecond());
-        System.out.println("Follow Redirects: " + config.isFollowRedirects());
-        
-        if (config.getAuthHeader() != null) {
-            System.out.println("Auth Header: " + maskToken(config.getAuthHeader()));
-        }
-        
-        System.out.println("=================================\n");
-    }
-
-    /**
-     * ✅ ДОБАВЛЕНО: Проверяет валидность OpenAPI файла
-     */
-    private static boolean isValidOpenApiFile(String filePath) {
-        if (filePath == null || filePath.trim().isEmpty()) {
-            return false;
-        }
-        
-        // Проверяем расширение файла
-        String lowerCasePath = filePath.toLowerCase();
-        boolean validExtension = lowerCasePath.endsWith(".yaml") || 
-                                lowerCasePath.endsWith(".yml") || 
-                                lowerCasePath.endsWith(".json");
-        
-        if (!validExtension) {
-            System.err.println("❌ Invalid file extension. Supported: .yaml, .yml, .json");
-            return false;
-        }
-        
-        // Проверяем существование файла
-        java.io.File file = new java.io.File(filePath);
-        if (!file.exists()) {
-            System.err.println("❌ OpenAPI file not found: " + filePath);
-            System.err.println("💡 Current directory: " + System.getProperty("user.dir"));
-            return false;
-        }
-        
-        // Проверяем, что файл не пустой
-        if (file.length() == 0) {
-            System.err.println("❌ OpenAPI file is empty: " + filePath);
-            return false;
-        }
-        
-        return true;
-    }
-
-    /**
-     * ✅ ДОБАВЛЕНО: Определяет формат OpenAPI файла
-     */
-    private static String getOpenApiFormat(String filePath) {
-        if (filePath == null) return "Unknown";
-        
-        String lowerCasePath = filePath.toLowerCase();
-        if (lowerCasePath.endsWith(".json")) {
-            return "JSON";
-        } else if (lowerCasePath.endsWith(".yaml") || lowerCasePath.endsWith(".yml")) {
-            return "YAML";
-        } else {
-            return "Unknown (will try to auto-detect)";
-        }
-    }
-
-    /**
-     * ✅ Маскирует токен в логах для безопасности
-     */
-    private static String maskToken(String authHeader) {
-        if (authHeader == null || authHeader.length() < 10) {
-            return "[hidden]";
-        }
-        return authHeader.substring(0, 10) + "..." + authHeader.substring(authHeader.length() - 4);
     }
 
     /**
      * ✅ Выводит результаты сканирования в консоль
      */
-    private static void printResults(ScanResult result, boolean verbose) {
-        System.out.println("\n📊 SCAN RESULTS");
-        System.out.println("================");
-        
-        if (result.getFindings().isEmpty()) {
-            System.out.println("✅ No security vulnerabilities found!");
-            System.out.println("💡 The API appears to be well-protected against tested attacks.");
-        } else {
-            System.out.println("⚠️  Found " + result.getFindings().size() + " security issues:");
-            System.out.println();
-            
-            for (Finding finding : result.getFindings()) {
+    private void printScanResults(ScanResult results) {
+        long totalFindings = results.getFindings().size();
+        long criticalCount = results.getFindings().stream()
+            .mapToLong(f -> f.getSeverity() == org.owasp.astf.core.result.Severity.CRITICAL ? 1 : 0).sum();
+        long highCount = results.getFindings().stream()
+            .mapToLong(f -> f.getSeverity() == org.owasp.astf.core.result.Severity.HIGH ? 1 : 0).sum();
+        long mediumCount = results.getFindings().stream()
+            .mapToLong(f -> f.getSeverity() == org.owasp.astf.core.result.Severity.MEDIUM ? 1 : 0).sum();
+        long lowCount = results.getFindings().stream()
+            .mapToLong(f -> f.getSeverity() == org.owasp.astf.core.result.Severity.LOW ? 1 : 0).sum();
+        long infoCount = results.getFindings().stream()
+            .mapToLong(f -> f.getSeverity() == org.owasp.astf.core.result.Severity.INFO ? 1 : 0).sum();
+
+        System.out.println("\n📊 SCAN RESULTS SUMMARY:");
+        System.out.println("┌─────────────────────────────────────────────┐");
+        System.out.println("│ • Total findings:        " + String.format("%-18s", totalFindings) + "│");
+        System.out.println("│ • 🔴 Critical:           " + String.format("%-18s", criticalCount) + "│");
+        System.out.println("│ • 🟠 High:               " + String.format("%-18s", highCount) + "│");
+        System.out.println("│ • 🟡 Medium:             " + String.format("%-18s", mediumCount) + "│");
+        System.out.println("│ • 🟢 Low:                " + String.format("%-18s", lowCount) + "│");
+        System.out.println("│ • 🔵 Info:               " + String.format("%-18s", infoCount) + "│");
+
+        if (results.getScanStartTime() != null && results.getScanEndTime() != null) {
+            long durationSeconds = java.time.Duration.between(results.getScanStartTime(), results.getScanEndTime()).getSeconds();
+            long minutes = durationSeconds / 60;
+            long seconds = durationSeconds % 60;
+            if (minutes > 0) {
+                System.out.println("│ • Duration:              " + String.format("%-18s", minutes + "m " + seconds + "s") + "│");
+            } else {
+                System.out.println("│ • Duration:              " + String.format("%-18s", seconds + " seconds") + "│");
+            }
+        }
+
+        String outputFile = results.getConfig().getOutputFile() != null ? 
+                           results.getConfig().getOutputFile() : "scan_results.json";
+        System.out.println("│ • Report saved to:       " + String.format("%-18s", outputFile) + "│");
+        System.out.println("└─────────────────────────────────────────────┘");
+
+        // ✅ Вывод найденных уязвимостей (если есть)
+        if (!results.getFindings().isEmpty()) {
+            System.out.println("\n🔍 DETECTED SECURITY FINDINGS:");
+            for (Finding finding : results.getFindings()) {
                 String severityIcon = getSeverityIcon(finding.getSeverity());
-                // ✅ ИСПРАВЛЕНИЕ: Используем правильные методы - getId() и getEndpoint()
                 System.out.println(severityIcon + " [" + finding.getSeverity() + "] " + 
-                    finding.getId() + ": " + finding.getEndpoint());
-                
-                if (verbose) {
-                    // ✅ ДОБАВЛЕНО: Подробная информация в verbose mode
-                    System.out.println("   Description: " + finding.getDescription());
-                    System.out.println("   Remediation: " + finding.getRemediation());
-                    System.out.println("   ---");
-                } else {
-                    System.out.println("   Description: " + finding.getDescription().split("\n")[0]);
-                }
-                System.out.println();
+                                 finding.getTitle() + ": " + finding.getDescription().split("\n")[0]);
             }
-        }
-        
-        // Показываем метрики
-        System.out.println("📈 SCAN METRICS");
-        System.out.println("===============");
-        System.out.println("Start Time: " + result.getScanStartTime());
-        System.out.println("End Time: " + result.getScanEndTime());
-        if (result.getScanStartTime() != null && result.getScanEndTime() != null) {
-            long duration = java.time.Duration.between(result.getScanStartTime(), result.getScanEndTime()).toSeconds();
-            System.out.println("Duration: " + duration + " seconds");
-        }
-
-        // ✅ ДОБАВЛЕНО: Детальная статистика в verbose mode
-        if (verbose) {
-            printDetailedMetrics(result);
+        } else {
+            System.out.println("\n✅ No security vulnerabilities detected!");
         }
     }
 
     /**
-     * ✅ ДОБАВЛЕНО: Выводит детальную статистику сканирования
+     * ✅ Возвращает эмодзи для уровня серьезности
      */
-    private static void printDetailedMetrics(ScanResult result) {
-        System.out.println("\n🔍 DETAILED SCAN METRICS:");
-        System.out.println("=========================");
-        
-        // Подсчитываем находки по уровням серьезности
-        int critical = 0, high = 0, medium = 0, low = 0, info = 0;
-        for (Finding finding : result.getFindings()) {
-            switch (finding.getSeverity()) {
-                case CRITICAL: critical++; break;
-                case HIGH: high++; break;
-                case MEDIUM: medium++; break;
-                case LOW: low++; break;
-                case INFO: info++; break;
-            }
-        }
-        
-        System.out.println("Findings by Severity:");
-        System.out.println("  🔴 CRITICAL: " + critical);
-        System.out.println("  🟠 HIGH: " + high);
-        System.out.println("  🟡 MEDIUM: " + medium);
-        System.out.println("  🟢 LOW: " + low);
-        System.out.println("  🔵 INFO: " + info);
-        
-        System.out.println("\nScan Configuration:");
-        System.out.println("  Target: " + result.getTargetUrl());
-        System.out.println("  Total Findings: " + result.getFindings().size());
-        System.out.println("  Scan Duration: " + 
-            java.time.Duration.between(result.getScanStartTime(), result.getScanEndTime()).toSeconds() + " seconds");
-        System.out.println("=========================");
-    }
-
-    /**
-     * ✅ Возвращает иконку для уровня серьезности
-     */
-    private static String getSeverityIcon(org.owasp.astf.core.result.Severity severity) {
+    private String getSeverityIcon(org.owasp.astf.core.result.Severity severity) {
         switch (severity) {
             case CRITICAL: return "🔴";
-            case HIGH: return "🟠"; 
+            case HIGH: return "🟠";
             case MEDIUM: return "🟡";
             case LOW: return "🟢";
             case INFO: return "🔵";
@@ -358,100 +247,20 @@ public class ASTFCli {
     /**
      * ✅ Сохраняет отчёт в файл
      */
-    private static void saveReport(ScanResult result, String outputFile, boolean verbose) {
+    private void saveReport(ScanResult result, String outputFile) {
         try {
-            if (verbose) {
-                System.out.println("💾 Generating detailed report: " + outputFile);
-            } else {
-                System.out.println("💾 Generating report: " + outputFile);
-            }
+            System.out.println("💾 Generating report: " + outputFile);
             
-            JsonReportGenerator reportGenerator = new JsonReportGenerator();
+            // ✅ ИСПРАВЛЕНО: Используем ReportGeneratorFactory для поддержки разных форматов
+            org.owasp.astf.reporting.ReportGenerator generator = 
+                org.owasp.astf.reporting.ReportGeneratorFactory.create(outputFile);
+            generator.generateReport(result, outputFile);
             
-            // ✅ ИСПРАВЛЕНИЕ: Используем правильный метод generateReport()
-            reportGenerator.generateReport(result, outputFile);
-            
-            System.out.println("✅ Report successfully saved to: " + outputFile);
-            
-            // ✅ Дополнительная информация о файле
-            java.io.File file = new java.io.File(outputFile);
-            if (file.exists()) {
-                if (verbose) {
-                    System.out.println("📁 File size: " + file.length() + " bytes");
-                    System.out.println("📝 Findings in report: " + result.getFindings().size());
-                    System.out.println("📁 Absolute path: " + file.getAbsolutePath());
-                }
-            } else {
-                System.err.println("❌ Report file was not created: " + outputFile);
-            }
+            System.out.println("✅ Report saved successfully: " + outputFile);
             
         } catch (Exception e) {
             System.err.println("❌ Failed to save report: " + e.getMessage());
-            System.err.println("💡 Check if the output directory exists and is writable");
-            
-            // ✅ ДОБАВЛЕНО: Более детальная диагностика в verbose mode
-            if (verbose) {
-                System.err.println("🔍 Detailed Diagnostic Info:");
-                System.err.println("  - Output file: " + outputFile);
-                System.err.println("  - Current directory: " + System.getProperty("user.dir"));
-                System.err.println("  - File separator: " + java.io.File.separator);
-                System.err.println("  - User home: " + System.getProperty("user.home"));
-                System.err.println("  - Temp directory: " + System.getProperty("java.io.tmpdir"));
-                
-                e.printStackTrace();
-            }
+            e.printStackTrace();
         }
-    }
-
-    /**
-     * ✅ Проверяет наличие флага --verbose
-     */
-    private static boolean isVerbose(String[] args) {
-        for (String arg : args) {
-            if ("--verbose".equals(arg)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * ✅ Показывает справку по использованию
-     */
-    private static void printUsage() {
-        System.out.println("OWASP API Security Testing Framework");
-        System.out.println("=====================================");
-        System.out.println();
-        System.out.println("Usage:");
-        System.out.println("  java -jar astf.jar scan --target <url> [OPTIONS]");
-        System.out.println();
-        System.out.println("Required:");
-        System.out.println("  --target <url>              Target API URL (e.g., https://api.example.com)");
-        System.out.println();
-        System.out.println("Options:");
-        System.out.println("  --auth-header <header>      Authentication header (e.g., \"Authorization: Bearer token\")");
-        System.out.println("  --openapi <file>            Load endpoints from OpenAPI specification (YAML or JSON)");
-        System.out.println("  --use-gost                  Use GOST gateway for vbank.open.bankingapi.ru");
-        System.out.println("  --output-file <file>        Output file for results (default: scan_results.json)");
-        System.out.println("  --output-format <format>    Output format: json, html (default: json)");
-        System.out.println("  --threads <number>          Number of concurrent threads (default: 10)");
-        System.out.println("  --timeout <minutes>         Scan timeout in minutes (default: 30)");
-        System.out.println("  --verbose                   Enable verbose logging with detailed output");
-        System.out.println();
-        System.out.println("Examples:");
-        System.out.println("  java -jar astf.jar scan --target https://vbank.open.bankingapi.ru \\");
-        System.out.println("    --auth-header \"Authorization: Bearer token\" --openapi spec.yaml --verbose");
-        System.out.println();
-        System.out.println("  java -jar astf.jar scan --target https://vbank.open.bankingapi.ru \\");
-        System.out.println("    --use-gost --output-file my_scan.json --threads 5");
-        System.out.println();
-        System.out.println("  java -jar astf.jar scan --target https://vbank.open.bankingapi.ru \\");
-        System.out.println("    --auth-header \"Authorization: Bearer token\" --openapi spec.json --output-file results.json --verbose");
-        System.out.println();
-        System.out.println("Verbose Mode Benefits:");
-        System.out.println("  • Detailed configuration information");
-        System.out.println("  • Full finding descriptions and remediation steps");
-        System.out.println("  • Comprehensive scan metrics and statistics");
-        System.out.println("  • Enhanced error diagnostics and debugging");
     }
 }

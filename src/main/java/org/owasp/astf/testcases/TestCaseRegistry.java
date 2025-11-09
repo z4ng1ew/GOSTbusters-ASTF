@@ -1,7 +1,12 @@
 package org.owasp.astf.testcases;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
@@ -18,11 +23,14 @@ import org.owasp.astf.core.config.ScanConfig;
 public class TestCaseRegistry {
     private static final Logger logger = LogManager.getLogger(TestCaseRegistry.class);
 
-    private final List<TestCase> availableTestCases;
+    private final List<TestCase> availableTestCases; // ✅ ПОЛЕ ОБЪЯВЛЕНО
+    private final Map<String, TestCase> testCaseMap; // ✅ НОВОЕ: Для быстрого поиска по ID
 
     public TestCaseRegistry() {
         this.availableTestCases = new ArrayList<>();
+        this.testCaseMap = new ConcurrentHashMap<>();
         registerDefaultTestCases();
+        loadPluginTestCases(); // ✅ НОВОЕ: Загрузка плагинов через SPI
     }
 
     /**
@@ -37,9 +45,9 @@ public class TestCaseRegistry {
         register(new FunctionLevelAuthTestCase());       // API5:2023 - Broken Function Level Authorization
         register(new MassAssignmentTestCase());          // API6:2023 - Mass Assignment
         register(new SSRFTestCase());                    // API7:2023 - Server-Side Request Forgery
-        register(new SecurityMisconfigurationTestCase()); // API8:2023 - Security Misconfiguration (новый!)
-        register(new ImproperInventoryManagementTestCase()); // API9:2023 - Improper Inventory (новый!)
-        register(new UnsafeConsumptionTestCase());       // API10:2023 - Unsafe Consumption (новый!)
+        register(new SecurityMisconfigurationTestCase()); // API8:2023 - Security Misconfiguration
+        register(new ImproperInventoryManagementTestCase()); // API9:2023 - Improper Inventory
+        register(new UnsafeConsumptionTestCase());       // API10:2023 - Unsafe Consumption
 
         // ✅ ДОПОЛНИТЕЛЬНЫЕ ТЕСТЫ (для глубокого анализа)
         register(new InjectionTestCase());               // Generic Injection (SQLi, NoSQLi, etc.)
@@ -48,8 +56,45 @@ public class TestCaseRegistry {
         register(new CORSMisconfigurationTestCase());    // CORS misconfig
         register(new XXETestCase());                     // XXE attacks
         register(new JWTTestCase());                     // JWT attacks
+        
+        // ✅ НОВЫЙ ТЕСТ (для Open Banking и GraphQL)
+        register(new GraphQLTestCase());                 // GraphQL vulnerabilities (NEW!)
 
         logger.info("✅ Registered {} built-in test cases (OWASP API Top 10 2023 compliant)", availableTestCases.size());
+    }
+
+    /**
+     * ✅ НОВОЕ: Загрузка плагинов через SPI (Service Provider Interface)
+     */
+    private void loadPluginTestCases() {
+        try {
+            ServiceLoader<TestCase> loader = ServiceLoader.load(TestCase.class);
+            int pluginCount = 0;
+            
+            for (TestCase plugin : loader) {
+                // Проверяем, что это действительно плагин (а не встроенный тест)
+                String className = plugin.getClass().getName();
+                if (className.startsWith("org.owasp.astf.testcases.") && 
+                    !className.equals("org.owasp.astf.testcases.PluginAsTestCaseAdapter")) {
+                    // Это встроенный тест, пропускаем
+                    continue;
+                }
+                
+                register(plugin);
+                pluginCount++;
+                logger.info("🔌 Plugin loaded: {} - {}", plugin.getId(), plugin.getName());
+            }
+            
+            if (pluginCount > 0) {
+                logger.info("✅ Loaded {} plugin test cases via SPI", pluginCount);
+            } else {
+                logger.info("ℹ️ No external plugins found. Using built-in test cases only.");
+            }
+            
+        } catch (Exception e) {
+            logger.warn("⚠️ Error loading plugin test cases: {}", e.getMessage());
+            logger.debug("Plugin loading error details:", e);
+        }
     }
 
     /**
@@ -58,7 +103,13 @@ public class TestCaseRegistry {
      * @param testCase The test case to register
      */
     public void register(TestCase testCase) {
+        // ✅ ПРОВЕРЯЕМ, ЧТО ТЕСТ ЕЩЁ НЕ ЗАРЕГИСТРИРОВАН
+        if (testCaseMap.containsKey(testCase.getId())) {
+            logger.warn("⚠️ Duplicate test case ID detected: {}. Overriding existing test case.", testCase.getId());
+        }
+        
         availableTestCases.add(testCase);
+        testCaseMap.put(testCase.getId(), testCase); // ✅ ДОБАВЛЕНО: Для быстрого поиска
         logger.debug("Registered test case: {} - {}", testCase.getId(), testCase.getName());
     }
 
@@ -75,16 +126,19 @@ public class TestCaseRegistry {
      * ✅ Gets only built-in test cases (without plugins)
      */
     public List<TestCase> getBuiltInTestCases() {
-        return new ArrayList<>(availableTestCases);
+        return availableTestCases.stream()
+            .filter(tc -> tc.getClass().getName().startsWith("org.owasp.astf.testcases.")) // Встроенные тесты
+            .filter(tc -> !tc.getClass().getName().startsWith("com.example.plugins.")) // Исключаем плагины
+            .collect(Collectors.toList());
     }
 
     /**
      * ✅ Gets only plugin test cases (loaded dynamically)
      */
     public List<TestCase> getPluginTestCases() {
-        // В реальной реализации будет загрузка через ServiceLoader
-        // Для хакатона возвращаем пустой список
-        return new ArrayList<>();
+        return availableTestCases.stream()
+            .filter(tc -> tc.getClass().getName().startsWith("com.example.plugins.")) // Плагины
+            .collect(Collectors.toList());
     }
 
     /**
@@ -97,46 +151,42 @@ public class TestCaseRegistry {
         List<String> enabledIds = config.getEnabledTestCaseIds();
         List<String> disabledIds = config.getDisabledTestCaseIds();
 
-        List<TestCase> filteredTestCases = availableTestCases;
+        List<TestCase> allTestCases = new ArrayList<>(availableTestCases); // ✅ ИСПРАВЛЕНО: Создаём копию
 
         // If specific IDs are enabled
         if (!enabledIds.isEmpty()) {
-            filteredTestCases = filteredTestCases.stream()
+            allTestCases = allTestCases.stream()
                     .filter(tc -> enabledIds.contains(tc.getId()))
                     .collect(Collectors.toList());
         } 
         // Otherwise exclude disabled ones
         else if (!disabledIds.isEmpty()) {
-            filteredTestCases = filteredTestCases.stream()
+            allTestCases = allTestCases.stream()
                     .filter(tc -> !disabledIds.contains(tc.getId()))
                     .collect(Collectors.toList());
         }
 
         // Log the result of filtering
         if (logger.isDebugEnabled()) {
-            logger.debug("Filtered to {} test cases: {}", filteredTestCases.size(), 
-                filteredTestCases.stream().map(TestCase::getId).collect(Collectors.toList()));
+            logger.debug("Filtered to {} test cases: {}", allTestCases.size(), 
+                allTestCases.stream().map(TestCase::getId).collect(Collectors.toList()));
         }
 
-        return filteredTestCases;
+        return allTestCases;
     }
 
     /**
      * ✅ Gets a test case by its ID
      */
     public TestCase getTestCaseById(String id) {
-        return availableTestCases.stream()
-                .filter(tc -> tc.getId().equals(id))
-                .findFirst()
-                .orElse(null);
+        return testCaseMap.get(id); // ✅ ИСПРАВЛЕНО: Используем Map для O(1) поиска
     }
 
     /**
      * ✅ Checks if a test case exists
      */
     public boolean hasTestCase(String id) {
-        return availableTestCases.stream()
-                .anyMatch(tc -> tc.getId().equals(id));
+        return testCaseMap.containsKey(id); // ✅ ИСПРАВЛЕНО: Используем Map
     }
 
     /**
@@ -163,5 +213,11 @@ public class TestCaseRegistry {
         public long getBuiltInCount() { return builtInCount; }
         public long getPluginCount() { return pluginCount; }
         public long getTotalCount() { return builtInCount + pluginCount; }
+        
+        @Override
+        public String toString() {
+            return String.format("TestCases: %d built-in, %d plugins, %d total", 
+                builtInCount, pluginCount, getTotalCount());
+        }
     }
 }

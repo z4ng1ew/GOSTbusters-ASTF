@@ -23,8 +23,8 @@ import org.owasp.astf.core.http.HttpResponse;
 import org.owasp.astf.core.result.Finding;
 import org.owasp.astf.core.result.ScanResult;
 import org.owasp.astf.core.result.Severity;
-import org.owasp.astf.openapi.OpenApiLoader;
-import org.owasp.astf.openbanking.OpenBankingAuthenticator;
+import org.owasp.astf.openapi.OpenApiLoader; // ✅ Правильный импорт
+import org.owasp.astf.openbanking.OpenBankingAuthenticator; // ✅ Правильный импорт
 import org.owasp.astf.testcases.TestCase;
 import org.owasp.astf.testcases.TestCaseRegistry;
 
@@ -159,8 +159,13 @@ public class Scanner {
             if (config.getClientId() != null && config.getClientSecret() != null) {
                 logger.info("🔑 Запуск аутентификации в Open Banking API...");
                 try {
-                    OpenBankingAuthenticator.setupAuth(config, httpClient);
-                    logger.info("✅ Аутентификация успешна. Заголовки настроены.");
+                    // ✅ ИСПРАВЛЕНО: Правильный путь к классу
+                    org.owasp.astf.openbanking.OpenBankingAuthenticator.setupAuth(config, httpClient);
+                    
+                    // ✅ ИСПРАВЛЕНО: Обновляем httpClient с новыми заголовками аутентификации
+                    this.httpClient.updateHeaders(config.getHeaders());
+                    
+                    logger.info("✅ Аутентификация успешна. Заголовки обновлены.");
                     System.out.println("✅ Open Banking authentication successful");
                 } catch (Exception e) {
                     logger.error("❌ Ошибка аутентификации: {}", e.getMessage());
@@ -542,8 +547,9 @@ public class Scanner {
         if (config.getOpenApiSpecPath() != null && !config.getOpenApiSpecPath().isEmpty()) {
             try {
                 logger.info("Loading endpoints from OpenAPI spec: {}", config.getOpenApiSpecPath());
-                var openAPI = OpenApiLoader.load(config.getOpenApiSpecPath());
-                endpoints.addAll(OpenApiLoader.getEndpoints(openAPI));
+                // ✅ ИСПРАВЛЕНО: Правильный путь к OpenApiLoader
+                var openAPI = org.owasp.astf.openapi.OpenApiLoader.load(config.getOpenApiSpecPath());
+                endpoints.addAll(org.owasp.astf.openapi.OpenApiLoader.getEndpoints(openAPI));
                 logger.info("Discovered {} endpoints from OpenAPI", endpoints.size());
             } catch (Exception e) {
                 logger.warn("Failed to load endpoints from OpenAPI spec: {}", e.getMessage());

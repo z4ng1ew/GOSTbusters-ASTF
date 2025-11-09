@@ -2,17 +2,23 @@ package org.owasp.astf.testcases;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
+import org.apache.http.client.methods.HttpGet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.owasp.astf.core.EndpointInfo;
+import org.owasp.astf.core.config.ScanConfig;
 import org.owasp.astf.core.http.HttpClient;
+import org.owasp.astf.core.http.HttpResponse;
 import org.owasp.astf.core.result.Finding;
 import org.owasp.astf.core.result.Severity;
+import org.owasp.astf.testcases.validation.AuthenticationValidator; // ✅ ИМПОРТ ДОБАВЛЕН
 
 /**
  * Tests for API2:2023 Broken Authentication.
@@ -33,14 +39,21 @@ public class BrokenAuthenticationTestCase implements TestCase {
             "login", "auth", "token", "signin", "oauth", "session"
     );
 
+    private ScanConfig config;
+
+    @Override
+    public void init(ScanConfig config) {
+        this.config = config;
+    }
+
     @Override
     public String getId() {
-        return "ASTF-API2-2023";
+        return "API2:2023";
     }
 
     @Override
     public String getName() {
-        return "Broken Authentication";
+        return "Broken Authentication (API2:2023)";
     }
 
     @Override
@@ -57,12 +70,17 @@ public class BrokenAuthenticationTestCase implements TestCase {
         logger.info("Executing {} test on {}", getId(), endpoint);
         List<Finding> findings = new ArrayList<>();
 
-        // ✅ УПРОЩЕННАЯ ЛОГИКА: Единый подход для всех endpoint types
-        System.out.println("🔐 Testing authentication on: " + endpoint.getMethod() + " " + endpoint.getFullUrl());
+        System.out.println("🔐 Testing authentication on: " + endpoint.getMethod() + " " + endpoint.getPath());
 
-        // ✅ Проверяем доступ без токена для endpoint'ов, требующих аутентификации
+        // ✅ ПРОВЕРЯЕМ: требует ли эндпоинт аутентификации
         if (endpoint.isRequiresAuthentication()) {
-            findings.addAll(testMissingAuthentication(endpoint, httpClient));
+            // ✅ ИСПРАВЛЕНО: Используем AuthenticationValidator
+            if (AuthenticationValidator.isUnauthenticatedAccessAllowed(endpoint, httpClient, config)) {
+                findings.add(createAuthBypassFinding(endpoint));
+                System.out.println("🚨 AUTH BYPASS: " + endpoint.getMethod() + " " + endpoint.getPath());
+            } else {
+                System.out.println("✅ Auth protected: " + endpoint.getMethod() + " " + endpoint.getPath());
+            }
         }
 
         // ✅ Проверяем уязвимости токенов для всех endpoint'ов
@@ -97,68 +115,18 @@ public class BrokenAuthenticationTestCase implements TestCase {
     }
 
     /**
-     * ✅ УПРОЩЕННАЯ ЛОГИКА: Тестирует слабые механизмы аутентификации
-     */
-    private List<Finding> testWeakAuthentication(EndpointInfo endpoint, HttpClient httpClient) {
-        List<Finding> findings = new ArrayList<>();
-
-        // Only test POST methods for login endpoints
-        if (!endpoint.getMethod().equalsIgnoreCase("POST")) {
-            return findings;
-        }
-
-        System.out.println("🔑 Testing authentication endpoint: " + endpoint.getPath());
-
-        // ✅ ДОБАВЛЕНО: Проверка common security headers
-        try {
-            Map<String, String> headers = new HashMap<>();
-            String response = httpClient.get(endpoint.getFullUrl(), headers);
-            
-            // Проверяем наличие security headers
-            if (!response.contains("rate-limit") && !response.contains("lockout")) {
-                Finding finding = new Finding(
-                    "AUTH-WEAK-01",
-                    "Weak Authentication Mechanisms",
-                    "🔐 Authentication endpoint may lack brute force protection mechanisms:\n" +
-                    "• No rate limiting detected\n" + 
-                    "• No account lockout mechanisms visible\n" +
-                    "• Consider implementing additional security controls",
-                    Severity.MEDIUM,
-                    getId(),
-                    endpoint.getFullUrl(),
-                    "✅ IMPROVE AUTHENTICATION SECURITY:\n" +
-                    "• Implement rate limiting (max attempts per minute)\n" +
-                    "• Add account lockout after 5-10 failed attempts\n" +
-                    "• Use strong password policies\n" +
-                    "• Consider multi-factor authentication"
-                );
-                findings.add(finding);
-            }
-        } catch (Exception e) {
-            // Expected for authentication endpoints
-        }
-
-        return findings;
-    }
-
-    /**
      * ✅ УПРОЩЕННАЯ И УЛУЧШЕННАЯ ЛОГИКА: Проверяет отсутствие аутентификации
+     * (ЗАМЕНЕНО: теперь используем AuthenticationValidator)
      */
     private List<Finding> testMissingAuthentication(EndpointInfo endpoint, HttpClient httpClient) {
         List<Finding> findings = new ArrayList<>();
 
-        try {
-            // ✅ ПРОСТАЯ ПРОВЕРКА: Доступен ли endpoint без аутентификации
-            if (isUnauthenticatedAccessAllowed(endpoint, httpClient)) {
-                Finding finding = createAuthBypassFinding(endpoint);
-                findings.add(finding);
-                System.out.println("🚨 AUTH BYPASS: " + endpoint.getMethod() + " " + endpoint.getPath());
-            } else {
-                System.out.println("✅ Auth protected: " + endpoint.getMethod() + " " + endpoint.getPath());
-            }
-
-        } catch (Exception e) {
-            logger.debug("Error testing missing authentication on endpoint {}: {}", endpoint, e.getMessage());
+        // ✅ ИСПОЛЬЗУЕМ ВАЛИДАТОР (вместо встроенной логики)
+        if (AuthenticationValidator.isUnauthenticatedAccessAllowed(endpoint, httpClient, config)) {
+            findings.add(createAuthBypassFinding(endpoint));
+            System.out.println("🚨 AUTH BYPASS: " + endpoint.getMethod() + " " + endpoint.getPath());
+        } else {
+            System.out.println("✅ Auth protected: " + endpoint.getMethod() + " " + endpoint.getPath());
         }
 
         return findings;
@@ -166,52 +134,9 @@ public class BrokenAuthenticationTestCase implements TestCase {
 
     /**
      * ✅ ДОБАВЛЕНО: Проверяет, разрешен ли доступ без аутентификации
+     * (МЕТОД УДАЛЕН - теперь используем AuthenticationValidator)
      */
-    private boolean isUnauthenticatedAccessAllowed(EndpointInfo endpoint, HttpClient httpClient) {
-        try {
-            // Создаем заголовки без аутентификации
-            Map<String, String> emptyHeaders = new HashMap<>();
-            
-            String response = performUnauthenticatedRequest(endpoint, httpClient, emptyHeaders);
-            int statusCode = extractStatusCode(response);
-            
-            // ✅ Если статус 200 - доступ разрешен без аутентификации (уязвимость)
-            return statusCode == 200;
-            
-        } catch (Exception e) {
-            // Если исключение - вероятно, аутентификация требуется
-            return false;
-        }
-    }
-
-    /**
-     * ✅ ДОБАВЛЕНО: Выполняет запрос без аутентификации в зависимости от метода
-     */
-    private String performUnauthenticatedRequest(EndpointInfo endpoint, HttpClient httpClient, 
-                                               Map<String, String> emptyHeaders) throws IOException {
-        String fullUrl = endpoint.getFullUrl();
-        
-        switch (endpoint.getMethod().toUpperCase()) {
-            case "GET":
-                return httpClient.get(fullUrl, emptyHeaders);
-                
-            case "POST":
-                String requestBody = endpoint.getRequestBody() != null ? endpoint.getRequestBody() : "{}";
-                String contentType = endpoint.getContentType() != null ? endpoint.getContentType() : "application/json";
-                return httpClient.post(fullUrl, emptyHeaders, contentType, requestBody);
-                
-            case "PUT":
-                requestBody = endpoint.getRequestBody() != null ? endpoint.getRequestBody() : "{}";
-                contentType = endpoint.getContentType() != null ? endpoint.getContentType() : "application/json";
-                return httpClient.put(fullUrl, emptyHeaders, contentType, requestBody);
-                
-            case "DELETE":
-                return httpClient.delete(fullUrl, emptyHeaders);
-                
-            default:
-                return httpClient.get(fullUrl, emptyHeaders);
-        }
-    }
+    // ✅ УДАЛЕНО: isUnauthenticatedAccessAllowed() - теперь в AuthenticationValidator
 
     /**
      * ✅ ДОБАВЛЕНО: Создает finding для обхода аутентификации
@@ -228,7 +153,7 @@ public class BrokenAuthenticationTestCase implements TestCase {
             "• Expected: 401 Unauthorized for unauthenticated requests\n" +
             "• Actual: 200 OK without authentication token\n" +
             "• Impact: Attackers can access sensitive data/modify resources without authentication",
-            Severity.HIGH,
+            Severity.CRITICAL,
             getId(),
             endpoint.getFullUrl(),
             "✅ CRITICAL REMEDIATION REQUIRED:\n\n" +
@@ -248,81 +173,14 @@ public class BrokenAuthenticationTestCase implements TestCase {
      * ✅ ДОБАВЛЕНО: Возвращает тип операции для HTTP метода
      */
     private String getOperationType(String httpMethod) {
-        switch (httpMethod) {
-            case "GET": return "Data retrieval";
-            case "POST": return "Data creation";
-            case "PUT": return "Data update"; 
-            case "DELETE": return "Data deletion";
-            case "PATCH": return "Data modification";
-            default: return "API operation";
-        }
-    }
-
-    /**
-     * ✅ УЛУЧШЕННЫЙ МЕТОД: Определяет статус код из ответа
-     */
-    private int extractStatusCode(String response) {
-        if (response == null || response.trim().isEmpty()) {
-            return 500; // Assume error for null/empty responses
-        }
-        
-        // ✅ УЛУЧШЕННЫЕ ЭВРИСТИКИ ДЛЯ ОПРЕДЕЛЕНИЯ СТАТУСА
-        
-        // 1. Проверяем явные признаки ошибок аутентификации
-        boolean isAuthError = response.toLowerCase().contains("unauthorized") || 
-                             response.toLowerCase().contains("authentication") ||
-                             response.toLowerCase().contains("401") ||
-                             response.toLowerCase().contains("403") ||
-                             response.toLowerCase().contains("access denied") ||
-                             response.toLowerCase().contains("forbidden") ||
-                             response.toLowerCase().contains("invalid token") ||
-                             response.toLowerCase().contains("missing authorization");
-
-        if (isAuthError) {
-            return 401;
-        }
-        
-        // 2. Проверяем JSON ответы
-        if (response.trim().startsWith("{") && response.trim().endsWith("}")) {
-            // Проверяем success indicators
-            boolean hasSuccessData = response.toLowerCase().contains("\"status\":\"success\"") ||
-                                   response.toLowerCase().contains("\"success\":true") ||
-                                   response.toLowerCase().contains("\"data\":") ||
-                                   response.toLowerCase().contains("\"result\":") ||
-                                   (response.length() > 100 && !response.toLowerCase().contains("\"error\""));
-            
-            // Проверяем error indicators  
-            boolean hasError = response.toLowerCase().contains("\"error\"") ||
-                             response.toLowerCase().contains("\"message\"") && 
-                             (response.toLowerCase().contains("unauthorized") || 
-                              response.toLowerCase().contains("forbidden"));
-            
-            if (hasSuccessData && !hasError) {
-                return 200;
-            } else if (hasError) {
-                return 401;
-            }
-        }
-        
-        // 3. Проверяем HTML ошибки
-        if (response.toLowerCase().contains("<title>401") ||
-            response.toLowerCase().contains("<title>403") ||
-            response.toLowerCase().contains("<title>error") ||
-            response.toLowerCase().contains("http status 401") ||
-            response.toLowerCase().contains("http status 403")) {
-            return 401;
-        }
-        
-        // 4. Проверяем успешные ответы по длине и содержанию
-        if (response.length() > 50 && 
-            !response.toLowerCase().contains("error") &&
-            !response.toLowerCase().contains("unauthorized") &&
-            !response.toLowerCase().contains("forbidden")) {
-            return 200; // Likely successful response
-        }
-        
-        // 5. По умолчанию считаем ошибкой
-        return 500;
+        return switch (httpMethod) {
+            case "GET" -> "Data retrieval";
+            case "POST" -> "Data creation";
+            case "PUT" -> "Data update";
+            case "DELETE" -> "Data deletion";
+            case "PATCH" -> "Data modification";
+            default -> "API operation";
+        };
     }
 
     /**
@@ -364,8 +222,13 @@ public class BrokenAuthenticationTestCase implements TestCase {
             Map<String, String> emptyTokenHeaders = new HashMap<>();
             emptyTokenHeaders.put("Authorization", "");
             
-            String response = performTestRequest(endpoint, httpClient, emptyTokenHeaders);
-            return extractStatusCode(response) == 200;
+            // ✅ ИСПРАВЛЕНО: Используем executeRequest и получаем HttpResponse
+            HttpResponse response = httpClient.executeRequest(
+                new HttpGet(endpoint.getFullUrl()),
+                emptyTokenHeaders
+            );
+            
+            return response.getStatusCode() == 200;
         } catch (Exception e) {
             return false;
         }
@@ -379,8 +242,13 @@ public class BrokenAuthenticationTestCase implements TestCase {
             Map<String, String> malformedTokenHeaders = new HashMap<>();
             malformedTokenHeaders.put("Authorization", "Bearer invalid_token_12345");
             
-            String response = performTestRequest(endpoint, httpClient, malformedTokenHeaders);
-            return extractStatusCode(response) == 200;
+            // ✅ ИСПРАВЛЕНО: Используем executeRequest и получаем HttpResponse
+            HttpResponse response = httpClient.executeRequest(
+                new HttpGet(endpoint.getFullUrl()),
+                malformedTokenHeaders
+            );
+            
+            return response.getStatusCode() == 200;
         } catch (Exception e) {
             return false;
         }
@@ -393,8 +261,14 @@ public class BrokenAuthenticationTestCase implements TestCase {
         try {
             String urlWithToken = endpoint.getFullUrl() + 
                 (endpoint.getFullUrl().contains("?") ? "&" : "?") + "token=test123";
-            String response = httpClient.get(urlWithToken, new HashMap<>());
-            return extractStatusCode(response) == 200;
+            
+            // ✅ ИСПРАВЛЕНО: Используем executeRequest и получаем HttpResponse
+            HttpResponse response = httpClient.executeRequest(
+                new HttpGet(urlWithToken),
+                new HashMap<>() // Пустые заголовки
+            );
+            
+            return response.getStatusCode() == 200;
         } catch (Exception e) {
             return false;
         }
@@ -405,35 +279,15 @@ public class BrokenAuthenticationTestCase implements TestCase {
      */
     private boolean testNoAuthHeaders(EndpointInfo endpoint, HttpClient httpClient) {
         try {
-            String response = performTestRequest(endpoint, httpClient, new HashMap<>());
-            return extractStatusCode(response) == 200;
+            // ✅ ИСПРАВЛЕНО: Используем executeRequest и получаем HttpResponse
+            HttpResponse response = httpClient.executeRequest(
+                new HttpGet(endpoint.getFullUrl()),
+                new HashMap<>() // Пустые заголовки
+            );
+            
+            return response.getStatusCode() == 200;
         } catch (Exception e) {
             return false;
-        }
-    }
-
-    /**
-     * ✅ ДОБАВЛЕНО: Выполняет тестовый запрос с указанными заголовками
-     */
-    private String performTestRequest(EndpointInfo endpoint, HttpClient httpClient, 
-                                    Map<String, String> headers) throws IOException {
-        String fullUrl = endpoint.getFullUrl();
-        
-        switch (endpoint.getMethod().toUpperCase()) {
-            case "GET":
-                return httpClient.get(fullUrl, headers);
-            case "POST":
-                String requestBody = endpoint.getRequestBody() != null ? endpoint.getRequestBody() : "{}";
-                String contentType = endpoint.getContentType() != null ? endpoint.getContentType() : "application/json";
-                return httpClient.post(fullUrl, headers, contentType, requestBody);
-            case "PUT":
-                requestBody = endpoint.getRequestBody() != null ? endpoint.getRequestBody() : "{}";
-                contentType = endpoint.getContentType() != null ? endpoint.getContentType() : "application/json";
-                return httpClient.put(fullUrl, headers, contentType, requestBody);
-            case "DELETE":
-                return httpClient.delete(fullUrl, headers);
-            default:
-                return httpClient.get(fullUrl, headers);
         }
     }
 
@@ -464,5 +318,62 @@ public class BrokenAuthenticationTestCase implements TestCase {
             "   • Monitor for suspicious token usage\n" +
             "   • Regular security testing of authentication flows"
         );
+    }
+
+    /**
+     * ✅ УПРОЩЕННАЯ ЛОГИКА: Тестирует слабые механизмы аутентификации
+     */
+    private List<Finding> testWeakAuthentication(EndpointInfo endpoint, HttpClient httpClient) {
+        List<Finding> findings = new ArrayList<>();
+
+        // Only test POST methods for login endpoints
+        if (!endpoint.getMethod().equalsIgnoreCase("POST")) {
+            return findings;
+        }
+
+        System.out.println("🔑 Testing authentication endpoint: " + endpoint.getPath());
+
+        // ✅ ДОБАВЛЕНО: Проверка common security headers
+        try {
+            Map<String, String> headers = new HashMap<>();
+            // ✅ ИСПРАВЛЕНО: Используем executeRequest и получаем HttpResponse
+            HttpResponse response = httpClient.executeRequest(
+                new HttpGet(endpoint.getFullUrl()),
+                headers
+            );
+            
+            // Проверяем наличие security headers
+            Map<String, List<String>> responseHeaders = response.getHeaders();
+            boolean hasRateLimiting = responseHeaders.containsKey("X-RateLimit-Limit") || 
+                                    responseHeaders.containsKey("RateLimit-Limit") ||
+                                    responseHeaders.containsKey("X-Rate-Limit");
+            boolean hasLockoutMechanism = responseHeaders.containsKey("X-Account-Lockout") ||
+                                        responseHeaders.containsKey("X-Brute-Force-Protection");
+            
+            if (!hasRateLimiting && !hasLockoutMechanism) {
+                Finding finding = new Finding(
+                    "AUTH-WEAK-01",
+                    "Weak Authentication Mechanisms",
+                    "🔐 Authentication endpoint may lack brute force protection mechanisms:\n" +
+                    "• No rate limiting detected\n" + 
+                    "• No account lockout mechanisms visible\n" +
+                    "• Consider implementing additional security controls",
+                    Severity.MEDIUM,
+                    getId(),
+                    endpoint.getFullUrl(),
+                    "✅ IMPROVE AUTHENTICATION SECURITY:\n" +
+                    "• Implement rate limiting (max attempts per minute)\n" +
+                    "• Add account lockout after 5-10 failed attempts\n" +
+                    "• Use strong password policies\n" +
+                    "• Consider multi-factor authentication"
+                );
+                findings.add(finding);
+            }
+        } catch (Exception e) {
+            // Expected for authentication endpoints
+            logger.debug("Authentication endpoint may not support GET: {}", e.getMessage());
+        }
+
+        return findings;
     }
 }

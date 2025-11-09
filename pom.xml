@@ -4,110 +4,142 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.owasp</groupId>
-    <artifactId>api-security-testing-framework</artifactId>
+    <!-- ✅ МУЛЬТИ-МОДУЛЬНАЯ АРХИТЕКТУРА -->
+    <groupId>org.gostbusters</groupId>
+    <artifactId>gostbusters-astf</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging> <!-- ✅ ВАЖНО: packaging=pom -->
 
-    <name>OWASP API Security Testing Framework</name>
-    <description>A comprehensive framework for testing API security vulnerabilities</description>
+    <name>GOSTbusters API Security Testing Framework</name>
+    <description>OWASP API Security scanner with Open Banking Russia and GOST support</description>
+    <url>https://github.com/gostbusters/gostbusters-astf</url>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- ✅ ИСПРАВЛЕНО: Добавлены отсутствующие версии -->
+        <!-- ✅ ВЕРСИИ ЗАВИСИМОСТЕЙ -->
         <jackson.version>2.15.3</jackson.version>
         <log4j.version>2.22.1</log4j.version>
-        <okhttp.version>4.12.0</okhttp.version> <!-- ✅ ДОБАВЛЕНО -->
-        <picocli.version>4.7.5</picocli.version> <!-- ✅ ДОБАВЛЕНО -->
+        <okhttp.version>4.12.0</okhttp.version>
+        <picocli.version>4.7.5</picocli.version>
         <junit.version>5.10.1</junit.version>
         <mockito.version>5.8.0</mockito.version>
-        <swagger.parser.version>2.1.22</swagger.parser.version> <!-- ✅ ДОБАВЛЕНО -->
+        <swagger.parser.version>2.1.22</swagger.parser.version>
     </properties>
 
+    <!-- ✅ УПРАВЛЕНИЕ ВЕРСИЯМИ ЗАВИСИМОСТЕЙ -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>okhttp</artifactId>
+                <version>${okhttp.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-yaml</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-api</artifactId>
+                <version>${log4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-core</artifactId>
+                <version>${log4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-slf4j2-impl</artifactId>
+                <version>${log4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>info.picocli</groupId>
+                <artifactId>picocli</artifactId>
+                <version>${picocli.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.swagger.parser.v3</groupId>
+                <artifactId>swagger-parser</artifactId>
+                <version>${swagger.parser.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- ✅ МОДУЛИ ПРОЕКТА -->
+    <modules>
+        <module>plugin-api</module>
+        <module>example-bola-plugin</module>
+        <!-- Добавь другие плагины при необходимости -->
+    </modules>
+
     <dependencies>
-        <!-- ✅ HTTP Client (только OkHttp - НЕТ КОНФЛИКТОВ!) -->
+        <!-- ✅ ЗАВИСИМОСТИ ДЛЯ ОСНОВНОГО МОДУЛЯ -->
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
-            <version>${okhttp.version}</version> <!-- ✅ ИСПОЛЬЗУЕТСЯ СВОЙСТВО -->
         </dependency>
-
-        <!-- ✅ JSON Processing -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
-
-        <!-- ✅ YAML Processing -->
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
-
-        <!-- ✅ CLI Processing -->
         <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
-            <version>${picocli.version}</version> <!-- ✅ ИСПОЛЬЗУЕТСЯ СВОЙСТВО -->
         </dependency>
-
-        <!-- ✅ Logging -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
-            <version>${log4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>${log4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j2-impl</artifactId>
-            <version>${log4j.version}</version>
         </dependency>
-
-        <!-- ✅ OpenAPI Parser -->
         <dependency>
             <groupId>io.swagger.parser.v3</groupId>
             <artifactId>swagger-parser</artifactId>
-            <version>${swagger.parser.version}</version> <!-- ✅ ИСПОЛЬЗУЕТСЯ СВОЙСТВО -->
         </dependency>
-
-        <!-- ✅ Тесты -->
+        <!-- ✅ ТЕСТЫ -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
             <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-suite</artifactId>
@@ -133,10 +165,11 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.1.2</version>
                 <configuration>
-                    <skipTests>true</skipTests> <!-- ✅ Отлично: для хакатона -->
+                    <skipTests>true</skipTests> <!-- ✅ Для хакатона -->
                 </configuration>
             </plugin>
 
+            <!-- ✅ SHADE PLUGIN ДЛЯ СОЗДАНИЯ EXECUTABLE JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>

@@ -4,71 +4,66 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- ✅ ПРАВИЛЬНО: Корректное наследование от родительского POM -->
+    <!-- ✅ ИСПРАВЛЕНО: Правильный родительский POM -->
     <parent>
-        <groupId>org.owasp</groupId>
-        <artifactId>api-security-testing-framework</artifactId>
+        <groupId>org.gostbusters</groupId>
+        <artifactId>gostbusters-astf</artifactId>
         <version>1.0-SNAPSHOT</version>
-        <!-- ✅ УКАЗАНО: относительный путь к родителю -->
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <!-- ✅ ПРАВИЛЬНО: artifactId соответствует имени папки -->
     <artifactId>plugin-api</artifactId>
     <packaging>jar</packaging>
-    <name>OWASP ASTF Plugin API</name>
+    <name>GOSTbusters ASTF Plugin API</name>
     <description>API for developing plugins for the ASTF framework</description>
 
+    <!-- ✅ ИСПРАВЛЕНО: Удалены дублирующиеся версии из properties -->
     <properties>
-        <!-- ✅ ИСПОЛЬЗУЕМ НАСЛЕДУЕМЫЕ СВОЙСТВА ОТ РОДИТЕЛЯ -->
-        <!-- Никаких собственных версий jackson, log4j - только через родителя -->
+        <!-- ✅ НЕТ: Все версии из родительского POM -->
     </properties>
 
     <dependencies>
-        <!-- ✅ Jackson для JSON/YAML (версии из родителя) -->
+        <!-- ✅ ИСПРАВЛЕНО: Зависимости от основного проекта -->
+        <dependency>
+            <groupId>org.gostbusters</groupId>
+            <artifactId>gostbusters-astf</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <classifier>core</classifier> <!-- ✅ Если core выделен в отдельный JAR -->
+            <scope>provided</scope> <!-- ✅ Только для компиляции -->
+        </dependency>
+
+        <!-- ✅ ИСПРАВЛЕНО: Зависимости с версиями через родительский POM -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <!-- ✅ ВЕРСИЯ НЕ УКАЗАНА - БУДЕТ ВЗЯТА ИЗ РОДИТЕЛЯ -->
+            <!-- ✅ НЕТ ВЕРСИИ: Будет из родительского dependencyManagement -->
         </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-            <!-- ✅ ВЕРСИЯ НЕ УКАЗАНА - БУДЕТ ВЗЯТА ИЗ РОДИТЕЛЯ -->
-        </dependency>
-
-        <!-- ✅ Логирование (версия из родителя) -->
+        
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
-            <!-- ✅ ВЕРСИЯ НЕ УКАЗАНА - БУДЕТ ВЗЯТА ИЗ РОДИТЕЛЯ -->
+            <!-- ✅ НЕТ ВЕРСИИ: Будет из родительского dependencyManagement -->
         </dependency>
 
-        <!-- ✅ HTTP клиент (версия указана явно, т.к. нет в родителе) -->
-        <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>4.12.0</version> <!-- ✅ ЯВНО УКАЗАНА ВЕРСИЯ -->
-        </dependency>
-
-        <!-- ✅ ЗАВИСИМОСТЬ ОТ ОСНОВНОГО МОДУЛЯ (без classifier) -->
-        <dependency>
-            <groupId>org.owasp</groupId>
-            <artifactId>api-security-testing-framework</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <!-- УБРАНО: <classifier>core</classifier> -->
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- ✅ Тесты (версии из родителя) -->
+        <!-- ✅ ИСПРАВЛЕНО: Тестовые зависимости с версиями -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit.version}</version> <!-- ✅ ИСПОЛЬЗУЕМ ИЗ РОДИТЕЛЯ -->
             <scope>test</scope>
         </dependency>
+        
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version> <!-- ✅ ИСПОЛЬЗУЕМ ИЗ РОДИТЕЛЯ -->
+            <scope>test</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version> <!-- ✅ ИСПОЛЬЗУЕМ ИЗ РОДИТЕЛЯ -->
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -85,7 +80,7 @@
                 </configuration>
             </plugin>
 
-            <!-- ✅ Генерация sources JAR -->
+            <!-- ✅ ДОБАВЛЕНО: Генерация sources JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
@@ -100,7 +95,7 @@
                 </executions>
             </plugin>
 
-            <!-- ✅ Генерация javadoc JAR -->
+            <!-- ✅ ДОБАВЛЕНО: Генерация javadoc JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
@@ -114,9 +109,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <!-- ✅ УПРАВЛЕНИЕ УПАКОВКОЙ (убран shade-plugin - он не нужен для API) -->
-            <!-- shade-plugin используется в основном JAR, не в API -->
         </plugins>
     </build>
 </project>

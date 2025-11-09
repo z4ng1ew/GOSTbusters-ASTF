@@ -1,0 +1,12 @@
+# configs/api10-test.yaml
+targetUrl: https://vbank.open.bankingapi.ru
+openApiSpecPath: https://vbank.open.bankingapi.ru/openapi.json
+clientId: team179
+clientSecret: JJqqH33ePjnfCMlyHFfz9Px09SMWvzhO
+bankId: vbank
+enabledTestCases:
+  - API10:2023  # ✅ Добавь этот тест
+threads: 1
+timeoutMinutes: 1
+outputFile: target/reports/api10-report.html
+verbose: true

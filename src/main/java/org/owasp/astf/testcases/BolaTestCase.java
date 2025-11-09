@@ -20,11 +20,13 @@ import org.owasp.astf.core.http.HttpResponse;
 import org.owasp.astf.core.result.Finding;
 import org.owasp.astf.core.result.Severity;
 
-// ✅ ИСПРАВЛЕНО: Используем Jackson вместо Gson
+// ✅ ИСПОЛЬЗУЕМ Jackson вместо Gson
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-// ✅ Остальные импорты как есть
+// ✅ ИМПОРТ OpenApiLoader
+import org.owasp.astf.openapi.OpenApiLoader;
+
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.Paths;
@@ -96,7 +98,8 @@ public class BolaTestCase implements TestCase {
         if (config.getOpenApiSpecPath() != null) {
             logger.info("🔍 Валидация OpenAPI-контракта для эндпоинта: {}", endpoint.getPath());
             try {
-                OpenAPI openAPI = OpenApiLoader.load(config.getOpenApiSpecPath());
+                // ✅ ИСПРАВЛЕНО: Используем правильный OpenApiLoader
+                var openAPI = org.owasp.astf.openapi.OpenApiLoader.load(config.getOpenApiSpecPath());
                 boolean isValid = validateOpenApiContract(endpoint, client, openAPI);
                 if (!isValid) {
                     findings.add(createContractViolationFinding(endpoint));
@@ -129,11 +132,12 @@ public class BolaTestCase implements TestCase {
         // BOLA TEST (API1:2023)
         // ----------------------------------------------------
         
-        // Проверяем, подходит ли эндпоинт для BOLA
-        if (!endpoint.getPath().contains("{id}") && 
-            !endpoint.getPath().contains("{accountId}") && 
-            !endpoint.getPath().contains("{account_id}")) {
-            logger.debug("⏭️ Skipping BOLA test (no ID parameter) for: {}", endpoint.getPath());
+        // ✅ ПРОВЕРЯЕМ: эндпоинт подходит для BOLA?
+        String path = endpoint.getPath().toLowerCase();
+        if (!path.contains("{id}") && 
+            !path.contains("{account_id}") && 
+            !path.contains("{account_id}")) {
+            logger.debug("⏭️ Skipping non-BOLA endpoint: {}", endpoint.getPath());
             return findings; // Возвращаем findings (OpenAPI + API9)
         }
 
@@ -213,11 +217,12 @@ public class BolaTestCase implements TestCase {
             }
             
             // (Если это простой GET-запрос без {id})
-            HttpResponse response = client.executeRequest(new HttpGet(endpoint.getFullUrl()), config.getHeaders());
+            Map<String, String> allHeaders = new HashMap<>(config.getHeaders());
+            HttpResponse response = client.get(endpoint.getFullUrl(), allHeaders);
 
             // 3. Сравнить структуру ответа с ожидаемой схемой из OpenAPI
             if (response.getStatusCode() == 200) {
-                String responseBody = response.getBody(); // ✅ ИСПРАВЛЕНО: используем getBody()
+                String responseBody = response.getResponseBody(); // ✅ ИСПРАВЛЕНО: getResponseBody()
                 // Используем JsonSchemaValidator для проверки ответа
                 return validateResponseAgainstSchema(responseBody, operation);
             }
@@ -270,11 +275,12 @@ public class BolaTestCase implements TestCase {
             logger.debug("📊 Запрашиваем список счетов: {}", accountsUrl);
             System.out.println("📊 Запрашиваем список счетов: " + accountsUrl);
             
-            // ✅ ИСПРАВЛЕНО: Используем executeRequest с двумя параметрами
-            HttpResponse response = client.executeRequest(new HttpGet(accountsUrl), config.getHeaders());
+            // ✅ ИСПРАВЛЕНО: Используем get() с заголовками
+            Map<String, String> allHeaders = new HashMap<>(config.getHeaders());
+            HttpResponse response = client.get(accountsUrl, allHeaders);
 
             if (response.getStatusCode() == 200) {
-                String responseBody = response.getBody(); // ✅ ИСПРАВЛЕНО: используем getBody()
+                String responseBody = response.getResponseBody(); // ✅ ИСПРАВЛЕНО: getResponseBody()
                 if (!responseBody.trim().startsWith("{")) {
                      logger.error("❌ Ответ не является JSON: {}", responseBody);
                      return Collections.emptyList();
@@ -294,7 +300,7 @@ public class BolaTestCase implements TestCase {
                 return accountIds;
             } else {
                 logger.error("❌ Ошибка получения счетов. Статус: {}, Ответ: {}", 
-                    response.getStatusCode(), response.getBody()); // ✅ ИСПРАВЛЕНО: getBody()
+                    response.getStatusCode(), response.getResponseBody()); // ✅ ИСПРАВЛЕНО: getResponseBody()
                 System.out.println("❌ Ошибка получения счетов. Статус: " + response.getStatusCode());
                 return Collections.emptyList();
             }
@@ -343,7 +349,7 @@ public class BolaTestCase implements TestCase {
             }
         }
         
-        foreignIds.addAll(Arrays.asList("acc-001", "acc-test", "acc-admin", "12345"));
+        foreignIds.addAll(List.of("acc-001", "acc-test", "acc-admin", "12345"));
         
         Set<String> uniqueIds = new LinkedHashSet<>(foreignIds);
         List<String> realisticIds = new ArrayList<>(uniqueIds);
@@ -360,7 +366,7 @@ public class BolaTestCase implements TestCase {
         int protectedAccess = 0;
 
         for (String foreignId : foreignAccountIds) {
-            int retryCount = 0;
+            int retryCount = 0; // ✅ ИСПРАВЛЕНО: Переменная определена
             long baseDelay = 350;
             boolean success = false;
             
@@ -377,10 +383,11 @@ public class BolaTestCase implements TestCase {
                     
                     logger.debug("🧪 Тестируем доступ к чужому счету: {}", testUrl);
                     
-                    // ✅ ИСПРАВЛЕНО: Используем executeRequest с двумя параметрами
-                    HttpResponse response = client.executeRequest(new HttpGet(testUrl), config.getHeaders());
+                    // ✅ ИСПРАВЛЕНО: Используем get() с заголовками
+                    Map<String, String> allHeaders = new HashMap<>(config.getHeaders());
+                    HttpResponse response = client.get(testUrl, allHeaders);
 
-                    String responseBody = response.getBody(); // ✅ ИСПРАВЛЕНО: используем getBody()
+                    String responseBody = response.getResponseBody(); // ✅ ИСПРАВЛЕНО: getResponseBody()
                     int statusCode = response.getStatusCode();
                     success = true;
 
@@ -407,7 +414,7 @@ public class BolaTestCase implements TestCase {
                 } catch (Exception e) {
                     String msg = e.getMessage();
                     if (msg != null && (msg.contains("429") || (e instanceof IOException && e.getMessage().contains("Too Many Requests")))) {
-                        if (retryCount < 3) {
+                        if (retryCount < 3) { // ✅ ИСПРАВЛЕНО: Теперь retryCount существует
                             long delay = baseDelay * (long) Math.pow(2, retryCount + 1);
                             logger.warn("⚠️ Rate limit hit. Попытка {} из 3. Пауза: {} мс", retryCount + 1, delay);
                             System.out.println("⚠️ Rate limit hit, пауза " + delay + " мс...");

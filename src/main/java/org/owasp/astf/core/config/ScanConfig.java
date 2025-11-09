@@ -68,7 +68,7 @@ public class ScanConfig {
     private String attackerToken;
     private String victimToken;
     
-    // 💡 OPEN BANKING API ПОЛЯ (из предыдущего шага)
+    // 💡 OPEN BANKING API ПОЛЯ
     private String clientId;
     private String clientSecret;
     private String bankId;
@@ -96,9 +96,7 @@ public class ScanConfig {
         this.pluginJars = new ArrayList<>();           // Инициализация
     }
 
-    // Target and scope getters/setters (сокращено для экономии места)
-    // ... (Геттеры и сеттеры targetUrl, endpoints, discoveryEnabled, excludePatterns, headers)
-
+    // Target and scope getters/setters
     public String getTargetUrl() { return targetUrl; }
     public void setTargetUrl(String targetUrl) { 
         if (targetUrl != null && !targetUrl.endsWith("/")) {
@@ -107,19 +105,39 @@ public class ScanConfig {
             this.targetUrl = targetUrl;
         }
     }
-    public List<EndpointInfo> getEndpoints() { return endpoints; }
-    public void setEndpoints(List<EndpointInfo> endpoints) { this.endpoints = endpoints; }
+    
+    public List<EndpointInfo> getEndpoints() { 
+        return endpoints != null ? endpoints : new ArrayList<>(); // ✅ ИСПРАВЛЕНО: защита от null
+    }
+    public void setEndpoints(List<EndpointInfo> endpoints) { 
+        this.endpoints = endpoints != null ? endpoints : new ArrayList<>(); // ✅ ИСПРАВЛЕНО: защита от null
+    }
+    
     public boolean isDiscoveryEnabled() { return discoveryEnabled; }
     public void setDiscoveryEnabled(boolean discoveryEnabled) { this.discoveryEnabled = discoveryEnabled; }
-    public List<String> getExcludePatterns() { return excludePatterns; }
-    public void setExcludePatterns(List<String> excludePatterns) { this.excludePatterns = excludePatterns; }
-    public Map<String, String> getHeaders() { return headers; }
-    public void setHeaders(Map<String, String> headers) { this.headers = headers; }
-    public void addHeader(String name, String value) { this.headers.put(name, value); }
+    
+    public List<String> getExcludePatterns() { 
+        return excludePatterns != null ? excludePatterns : new ArrayList<>(); // ✅ ИСПРАВЛЕНО: защита от null
+    }
+    public void setExcludePatterns(List<String> excludePatterns) { 
+        this.excludePatterns = excludePatterns != null ? excludePatterns : new ArrayList<>(); // ✅ ИСПРАВЛЕНО: защита от null
+    }
+    
+    public Map<String, String> getHeaders() { 
+        return headers != null ? headers : new HashMap<>(); // ✅ ИСПРАВЛЕНО: защита от null
+    }
+    public void setHeaders(Map<String, String> headers) { 
+        this.headers = headers != null ? headers : new HashMap<>(); // ✅ ИСПРАВЛЕНО: защита от null
+    }
+    public void addHeader(String name, String value) { 
+        if (this.headers == null) {
+            this.headers = new HashMap<>(); // ✅ ИСПРАВЛЕНО: инициализация при null
+        }
+        this.headers.put(name, value); 
+    }
 
 
-    // Authentication getters/setters (сокращено для экономии места)
-    // ... (Геттеры и сеттеры basicAuthUsername, basicAuthPassword, apiKey, apiKeyHeader, bearerToken, authHeader)
+    // Authentication getters/setters
     public String getBasicAuthUsername() { return basicAuthUsername; }
     public void setBasicAuthUsername(String basicAuthUsername) { this.basicAuthUsername = basicAuthUsername; }
     public String getBasicAuthPassword() { return basicAuthPassword; }
@@ -131,8 +149,8 @@ public class ScanConfig {
     public String getBearerToken() { return bearerToken; }
     public void setBearerToken(String bearerToken) { 
         this.bearerToken = bearerToken;
-        if (bearerToken != null && !bearerToken.isEmpty() && !headers.containsKey("Authorization")) {
-            headers.put("Authorization", "Bearer " + bearerToken);
+        if (bearerToken != null && !bearerToken.isEmpty() && getHeaders().isEmpty()) {
+            getHeaders().put("Authorization", "Bearer " + bearerToken);
         }
     }
     public String getAuthHeader() { return authHeader; }
@@ -141,14 +159,13 @@ public class ScanConfig {
         if (authHeader != null && !authHeader.trim().isEmpty()) {
             String[] parts = authHeader.split(":", 2);
             if (parts.length == 2) {
-                headers.put(parts[0].trim(), parts[1].trim());
+                getHeaders().put(parts[0].trim(), parts[1].trim()); // ✅ ИСПРАВЛЕНО: используем getHeaders()
             }
         }
     }
 
 
-    // Proxy getters/setters (сокращено для экономии места)
-    // ... (Геттеры и сеттеры proxyHost, proxyPort, proxyUsername, proxyPassword)
+    // Proxy getters/setters
     public String getProxyHost() { return proxyHost; }
     public void setProxyHost(String proxyHost) { this.proxyHost = proxyHost; }
     public int getProxyPort() { return proxyPort; }
@@ -159,16 +176,23 @@ public class ScanConfig {
     public void setProxyPassword(String proxyPassword) { this.proxyPassword = proxyPassword; }
 
 
-    // Test case configuration getters/setters (сокращено для экономии места)
-    // ... (Геттеры и сеттеры enabledTestCaseIds, disabledTestCaseIds)
-    public List<String> getEnabledTestCaseIds() { return enabledTestCaseIds; }
-    public void setEnabledTestCaseIds(List<String> enabledTestCaseIds) { this.enabledTestCaseIds = enabledTestCaseIds; }
-    public List<String> getDisabledTestCaseIds() { return disabledTestCaseIds; }
-    public void setDisabledTestCaseIds(List<String> disabledTestCaseIds) { this.disabledTestCaseIds = disabledTestCaseIds; }
+    // Test case configuration getters/setters
+    public List<String> getEnabledTestCaseIds() { 
+        return enabledTestCaseIds != null ? enabledTestCaseIds : new ArrayList<>(); // ✅ ИСПРАВЛЕНО: защита от null
+    }
+    public void setEnabledTestCaseIds(List<String> enabledTestCaseIds) { 
+        this.enabledTestCaseIds = enabledTestCaseIds != null ? enabledTestCaseIds : new ArrayList<>(); // ✅ ИСПРАВЛЕНО: защита от null
+    }
+    
+    public List<String> getDisabledTestCaseIds() { 
+        return disabledTestCaseIds != null ? disabledTestCaseIds : new ArrayList<>(); // ✅ ИСПРАВЛЕНО: защита от null
+    }
+    public void setDisabledTestCaseIds(List<String> disabledTestCaseIds) { 
+        this.disabledTestCaseIds = disabledTestCaseIds != null ? disabledTestCaseIds : new ArrayList<>(); // ✅ ИСПРАВЛЕНО: защита от null
+    }
 
 
-    // Execution settings getters/setters (сокращено для экономии места)
-    // ... (Геттеры и сеттеры threads, timeoutMinutes, requestDelayMs, maxRequestsPerSecond, followRedirects, validateCertificates)
+    // Execution settings getters/setters
     public int getThreads() { return threads; }
     public void setThreads(int threads) { this.threads = threads; }
     public int getTimeoutMinutes() { return timeoutMinutes; }
@@ -183,8 +207,7 @@ public class ScanConfig {
     public void setValidateCertificates(boolean validateCertificates) { this.validateCertificates = validateCertificates; }
 
 
-    // Output settings getters/setters (сокращено для экономии места)
-    // ... (Геттеры и сеттеры outputFormat, outputFile, verbose, maxFindings, excludeSeverities)
+    // Output settings getters/setters
     public OutputFormat getOutputFormat() { return outputFormat; }
     public void setOutputFormat(OutputFormat outputFormat) { this.outputFormat = outputFormat; }
     public String getOutputFile() { return outputFile; }
@@ -193,8 +216,12 @@ public class ScanConfig {
     public void setVerbose(boolean verbose) { this.verbose = verbose; }
     public int getMaxFindings() { return maxFindings; }
     public void setMaxFindings(int maxFindings) { this.maxFindings = maxFindings; }
-    public List<String> getExcludeSeverities() { return excludeSeverities; }
-    public void setExcludeSeverities(List<String> excludeSeverities) { this.excludeSeverities = excludeSeverities; }
+    public List<String> getExcludeSeverities() { 
+        return excludeSeverities != null ? excludeSeverities : new ArrayList<>(); // ✅ ИСПРАВЛЕНО: защита от null
+    }
+    public void setExcludeSeverities(List<String> excludeSeverities) { 
+        this.excludeSeverities = excludeSeverities != null ? excludeSeverities : new ArrayList<>(); // ✅ ИСПРАВЛЕНО: защита от null
+    }
 
 
     // ✅ ГЕТТЕРЫ И СЕТТЕРЫ ДЛЯ ХАКАТОНА
@@ -218,83 +245,28 @@ public class ScanConfig {
     public void setConsentId(String consentId) { this.consentId = consentId; }
     
     // 💡 1. ГЕТТЕРЫ И СЕТТЕРЫ ДЛЯ AsyncAPI
+    public String getAsyncApiSpecPath() { return asyncApiSpecPath; }
+    public void setAsyncApiSpecPath(String asyncApiSpecPath) { this.asyncApiSpecPath = asyncApiSpecPath; }
     
-    /**
-     * Gets the path to AsyncAPI specification file.
-     *
-     * @return The AsyncAPI specification file path
-     */
-    public String getAsyncApiSpecPath() {
-        return asyncApiSpecPath;
+    public List<String> getEnabledAsyncTestCases() { 
+        return enabledAsyncTestCases != null ? enabledAsyncTestCases : new ArrayList<>(); // ✅ ИСПРАВЛЕНО: защита от null
     }
-
-    /**
-     * Sets the path to AsyncAPI specification file.
-     *
-     * @param asyncApiSpecPath The AsyncAPI specification file path
-     */
-    public void setAsyncApiSpecPath(String asyncApiSpecPath) {
-        this.asyncApiSpecPath = asyncApiSpecPath;
-    }
-    
-    /**
-     * Gets the IDs of AsyncAPI-specific test cases to enable.
-     *
-     * @return The enabled AsyncAPI test case IDs
-     */
-    public List<String> getEnabledAsyncTestCases() {
-        return enabledAsyncTestCases;
-    }
-
-    /**
-     * Sets the IDs of AsyncAPI-specific test cases to enable.
-     *
-     * @param enabledAsyncTestCases The enabled AsyncAPI test case IDs
-     */
-    public void setEnabledAsyncTestCases(List<String> enabledAsyncTestCases) {
-        this.enabledAsyncTestCases = enabledAsyncTestCases;
+    public void setEnabledAsyncTestCases(List<String> enabledAsyncTestCases) { 
+        this.enabledAsyncTestCases = enabledAsyncTestCases != null ? enabledAsyncTestCases : new ArrayList<>(); // ✅ ИСПРАВЛЕНО: защита от null
     }
 
     // 💡 2. ГЕТТЕРЫ И СЕТТЕРЫ ДЛЯ ПОДДЕРЖКИ ПЛАГИНОВ
-    
-    /**
-     * Gets the list of local paths to plugin JAR files.
-     *
-     * @return The list of plugin JAR paths
-     */
-    public List<String> getPluginJars() {
-        return pluginJars;
+    public List<String> getPluginJars() { 
+        return pluginJars != null ? pluginJars : new ArrayList<>(); // ✅ ИСПРАВЛЕНО: защита от null
     }
-
-    /**
-     * Sets the list of local paths to plugin JAR files.
-     *
-     * @param pluginJars The list of plugin JAR paths
-     */
-    public void setPluginJars(List<String> pluginJars) {
-        this.pluginJars = pluginJars;
-    }
-
-    /**
-     * Gets the remote URL for a plugin repository.
-     *
-     * @return The plugin repository URL
-     */
-    public String getPluginRepositoryUrl() {
-        return pluginRepositoryUrl;
-    }
-
-    /**
-     * Sets the remote URL for a plugin repository.
-     *
-     * @param pluginRepositoryUrl The plugin repository URL
-     */
-    public void setPluginRepositoryUrl(String pluginRepositoryUrl) {
-        this.pluginRepositoryUrl = pluginRepositoryUrl;
+    public void setPluginJars(List<String> pluginJars) { 
+        this.pluginJars = pluginJars != null ? pluginJars : new ArrayList<>(); // ✅ ИСПРАВЛЕНО: защита от null
     }
     
-    // 💡 3. МЕТОД НАСЛЕДОВАНИЯ КОНФИГУРАЦИИ
-
+    public String getPluginRepositoryUrl() { return pluginRepositoryUrl; }
+    public void setPluginRepositoryUrl(String pluginRepositoryUrl) { this.pluginRepositoryUrl = pluginRepositoryUrl; }
+    
+    // 💡 3. ИСПРАВЛЕННЫЙ МЕТОД НАСЛЕДОВАНИЯ КОНФИГУРАЦИИ
     /**
      * Merges properties from a parent configuration into this one,
      * overriding only if the current property is null.
@@ -307,38 +279,37 @@ public class ScanConfig {
 
         // Target and scope
         if (this.targetUrl == null) this.targetUrl = parentConfig.targetUrl;
-        if (this.endpoints.isEmpty()) this.endpoints.addAll(parentConfig.endpoints);
-        if (this.excludePatterns.isEmpty()) this.excludePatterns.addAll(parentConfig.excludePatterns);
-        if (this.headers.isEmpty()) this.headers.putAll(parentConfig.headers);
+        if (this.endpoints == null) this.endpoints = new ArrayList<>(parentConfig.getEndpoints()); // ✅ ИСПРАВЛЕНО: null-safe
+        if (this.excludePatterns == null) this.excludePatterns = new ArrayList<>(parentConfig.getExcludePatterns()); // ✅ ИСПРАВЛЕНО: null-safe
+        if (this.headers == null) this.headers = new HashMap<>(parentConfig.getHeaders()); // ✅ ИСПРАВЛЕНО: null-safe
 
         // Authentication
-        if (this.basicAuthUsername == null) this.basicAuthUsername = parentConfig.basicAuthUsername;
-        if (this.basicAuthPassword == null) this.basicAuthPassword = parentConfig.basicAuthPassword;
-        if (this.apiKey == null) this.apiKey = parentConfig.apiKey;
-        if (this.bearerToken == null) this.bearerToken = parentConfig.bearerToken;
-        if (this.authHeader == null) this.authHeader = parentConfig.authHeader;
+        if (this.basicAuthUsername == null) this.basicAuthUsername = parentConfig.getBasicAuthUsername();
+        if (this.basicAuthPassword == null) this.basicAuthPassword = parentConfig.getBasicAuthPassword();
+        if (this.apiKey == null) this.apiKey = parentConfig.getApiKey();
+        if (this.bearerToken == null) this.bearerToken = parentConfig.getBearerToken();
+        if (this.authHeader == null) this.authHeader = parentConfig.getAuthHeader();
 
         // Open Banking
-        if (this.clientId == null) this.clientId = parentConfig.clientId;
-        if (this.clientSecret == null) this.clientSecret = parentConfig.clientSecret;
-        if (this.bankId == null) this.bankId = parentConfig.bankId;
-        if (this.consentId == null) this.consentId = parentConfig.consentId;
+        if (this.clientId == null) this.clientId = parentConfig.getClientId();
+        if (this.clientSecret == null) this.clientSecret = parentConfig.getClientSecret();
+        if (this.bankId == null) this.bankId = parentConfig.getBankId();
+        if (this.consentId == null) this.consentId = parentConfig.getConsentId();
 
         // Specs and Plugins
-        if (this.openApiSpecPath == null) this.openApiSpecPath = parentConfig.openApiSpecPath;
-        if (this.asyncApiSpecPath == null) this.asyncApiSpecPath = parentConfig.asyncApiSpecPath;
-        if (this.enabledTestCaseIds.isEmpty()) this.enabledTestCaseIds.addAll(parentConfig.enabledTestCaseIds);
-        if (this.pluginJars.isEmpty()) this.pluginJars.addAll(parentConfig.pluginJars);
-        if (this.pluginRepositoryUrl == null) this.pluginRepositoryUrl = parentConfig.pluginRepositoryUrl;
+        if (this.openApiSpecPath == null) this.openApiSpecPath = parentConfig.getOpenApiSpecPath();
+        if (this.asyncApiSpecPath == null) this.asyncApiSpecPath = parentConfig.getAsyncApiSpecPath();
+        if (this.enabledTestCaseIds == null) this.enabledTestCaseIds = new ArrayList<>(parentConfig.getEnabledTestCaseIds()); // ✅ ИСПРАВЛЕНО: null-safe
+        if (this.pluginJars == null) this.pluginJars = new ArrayList<>(parentConfig.getPluginJars()); // ✅ ИСПРАВЛЕНО: null-safe
+        if (this.pluginRepositoryUrl == null) this.pluginRepositoryUrl = parentConfig.getPluginRepositoryUrl();
         
         // Settings (проверяем, что не используется значение по умолчанию 0/false)
-        if (this.threads == 10 && parentConfig.threads != 10) this.threads = parentConfig.threads;
+        if (this.threads == 10 && parentConfig.getThreads() != 10) this.threads = parentConfig.getThreads();
         
         return this;
     }
     
-    // 💡 4. УЛУЧШЕННЫЙ МЕТОД ВАЛИДАЦИИ КОНФИГУРАЦИИ
-
+    // 💡 4. ИСПРАВЛЕННЫЙ МЕТОД ВАЛИДАЦИИ КОНФИГУРАЦИИ
     /**
      * Validates the current scan configuration settings.
      *
@@ -361,7 +332,7 @@ public class ScanConfig {
             if (!matcher.find()) {
                 throw new IllegalArgumentException("GOST can only be used with a target URL containing 'open.bankingapi.ru'. Current URL: " + targetUrl);
             }
-             if (clientId == null || clientId.isEmpty() || clientSecret == null || clientSecret.isEmpty()) {
+            if (clientId == null || clientId.isEmpty() || clientSecret == null || clientSecret.isEmpty()) {
                  throw new IllegalArgumentException("Client ID and Client Secret must be provided when useGost is true for Open Banking API testing.");
             }
         }
@@ -372,24 +343,33 @@ public class ScanConfig {
             if (!lowerCasePath.endsWith(".yaml") && !lowerCasePath.endsWith(".json")) {
                 throw new IllegalArgumentException("OpenAPI spec path must point to a .yaml or .json file. Current path: " + openApiSpecPath);
             }
+            // ✅ ПРОВЕРЯЕМ СУЩЕСТВОВАНИЕ ФАЙЛА
+            Path path = Paths.get(openApiSpecPath);
+            if (!Files.exists(path)) {
+                throw new IllegalArgumentException("OpenAPI spec file does not exist: " + openApiSpecPath);
+            }
         }
         
         // AsyncAPI spec validation
         if (asyncApiSpecPath != null) {
             String lowerCasePath = asyncApiSpecPath.toLowerCase();
-            // AsyncAPI также может быть в YAML/JSON, но добавим проверку для ясности
             if (!lowerCasePath.endsWith(".yaml") && !lowerCasePath.endsWith(".json")) {
                 throw new IllegalArgumentException("AsyncAPI spec path must point to a .yaml or .json file. Current path: " + asyncApiSpecPath);
             }
+            // ✅ ПРОВЕРЯЕМ СУЩЕСТВОВАНИЕ ФАЙЛА
+            Path path = Paths.get(asyncApiSpecPath);
+            if (!Files.exists(path)) {
+                throw new IllegalArgumentException("AsyncAPI spec file does not exist: " + asyncApiSpecPath);
+            }
         }
         
-        // Plugin file validation (Recommendation 3)
+        // Plugin file validation
         if (pluginJars != null) {
             for (String jarPath : pluginJars) {
                 if (!jarPath.toLowerCase().endsWith(".jar")) {
                     throw new IllegalArgumentException("Plugin must be a .jar file: " + jarPath);
                 }
-                // Проверить существование файла
+                // ✅ ПРОВЕРЯЕМ СУЩЕСТВОВАНИЕ ФАЙЛА
                 try {
                     Path path = Paths.get(jarPath);
                     if (!Files.exists(path)) {

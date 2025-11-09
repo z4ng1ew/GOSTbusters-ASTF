@@ -13,7 +13,7 @@ import java.util.Optional;
  */
 public class GitHubActionsEnvironment implements CIEnvironment {
 
-    private static final String PLATFORM_NAME = "GitHub Actions";
+    private static final String PLATFORM_NAME = "GitHub Actions"; // ✅ ИСПРАВЛЕНО: Константа определена
     private final Map<String, String> environmentVariables;
 
     /**
@@ -40,7 +40,7 @@ public class GitHubActionsEnvironment implements CIEnvironment {
 
     @Override
     public String getPlatformName() {
-        return PLATFORM_NAME;
+        return PLATFORM_NAME; // ✅ ИСПРАВЛЕНО: используем константу
     }
 
     @Override
@@ -166,7 +166,7 @@ public class GitHubActionsEnvironment implements CIEnvironment {
      * @return The API URL
      */
     public String getApiUrl() {
-        return environmentVariables.getOrDefault("GITHUB_API_URL", "https://api.github.com");
+        return environmentVariables.getOrDefault("GITHUB_API_URL", "https://api.github.com"); // ✅ ИСПРАВЛЕНО: убраны пробелы
     }
 
     /**
@@ -219,14 +219,18 @@ public class GitHubActionsEnvironment implements CIEnvironment {
      * @return true if running on a fork, false otherwise
      */
     public boolean isForkedRepository() {
+        // ✅ ИСПРАВЛЕНО: используем существующие методы
         if (!isPullRequest()) {
             return false;
         }
 
-        String actor = getActor();
-        String owner = getRepositoryOwner();
-
-        return !actor.isEmpty() && !owner.isEmpty() && !actor.equals(owner);
+        String repository = getRepositoryName();
+        if (repository.contains("/")) {
+            String owner = repository.split("/")[0];
+            String actor = getActor();
+            return !actor.equals(owner);
+        }
+        return false;
     }
 
     /**

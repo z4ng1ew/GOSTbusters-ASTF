@@ -53,27 +53,28 @@ public class ConfigLoader {
      * @return The scan configuration
      * @throws IOException If the file cannot be read or parsed
      */
-    public ScanConfig loadFromFile(String filePath) throws IOException {
+    public static ScanConfig load(String filePath) throws IOException { // ✅ СТАТИЧЕСКИЙ МЕТОД
         File file = new File(filePath);
         if (!file.exists() || !file.isFile()) {
             throw new IOException("Configuration file not found: " + filePath);
         }
 
+        ConfigLoader loader = new ConfigLoader(); // ✅ Создаём экземпляр для использования
         ScanConfig config = new ScanConfig();
 
         // Determine file type by extension
         if (filePath.endsWith(".yaml") || filePath.endsWith(".yml")) {
-            JsonNode root = yamlMapper.readTree(file);
-            parseJsonConfig(root, config);
+            JsonNode root = loader.yamlMapper.readTree(file);
+            loader.parseJsonConfig(root, config);
         } else if (filePath.endsWith(".json")) {
-            JsonNode root = jsonMapper.readTree(file);
-            parseJsonConfig(root, config);
+            JsonNode root = loader.jsonMapper.readTree(file);
+            loader.parseJsonConfig(root, config);
         } else if (filePath.endsWith(".properties")) {
             Properties props = new Properties();
             try (FileInputStream fis = new FileInputStream(file)) {
                 props.load(fis);
             }
-            parsePropertiesConfig(props, config);
+            loader.parsePropertiesConfig(props, config);
         } else {
             throw new IOException("Unsupported configuration file format: " + filePath);
         }
@@ -188,7 +189,7 @@ public class ConfigLoader {
      * @param config The configuration to update
      */
     private void parseJsonConfig(JsonNode root, ScanConfig config) {
-        // Basic settings
+        // ✅ ОСНОВНЫЕ НАСТРОЙКИ (как было)
         if (root.has("targetUrl")) {
             config.setTargetUrl(root.get("targetUrl").asText());
         }
@@ -220,6 +221,40 @@ public class ConfigLoader {
 
         if (root.has("verbose")) {
             config.setVerbose(root.get("verbose").asBoolean());
+        }
+
+        // ✅ КРИТИЧЕСКИЕ ИСПРАВЛЕНИЯ: Open Banking Russia параметры
+        if (root.has("clientId")) {
+            config.setClientId(root.get("clientId").asText()); // ✅ ДОБАВЛЕНО
+        }
+
+        if (root.has("clientSecret")) {
+            config.setClientSecret(root.get("clientSecret").asText()); // ✅ ДОБАВЛЕНО
+        }
+
+        if (root.has("bankId")) {
+            config.setBankId(root.get("bankId").asText()); // ✅ ДОБАВЛЕНО
+        }
+
+        if (root.has("useGost")) {
+            config.setUseGost(root.get("useGost").asBoolean()); // ✅ ДОБАВЛЕНО
+        }
+
+        if (root.has("consentId")) {
+            config.setConsentId(root.get("consentId").asText()); // ✅ ДОБАВЛЕНО
+        }
+
+        if (root.has("attackerToken")) {
+            config.setAttackerToken(root.get("attackerToken").asText()); // ✅ ДОБАВЛЕНО
+        }
+
+        if (root.has("victimToken")) {
+            config.setVictimToken(root.get("victimToken").asText()); // ✅ ДОБАВЛЕНО
+        }
+
+        // ✅ КРИТИЧЕСКИЕ ИСПРАВЛЕНИЯ: OpenAPI спецификация
+        if (root.has("openApiSpecPath")) {
+            config.setOpenApiSpecPath(root.get("openApiSpecPath").asText()); // ✅ ДОБАВЛЕНО
         }
 
         // Headers
@@ -259,18 +294,30 @@ public class ConfigLoader {
         }
 
         // Test case configuration
-        if (root.has("enableTestCases") && root.get("enableTestCases").isArray()) {
-            JsonNode enableTests = root.get("enableTestCases");
+        if (root.has("enabledTestCases") && root.get("enabledTestCases").isArray()) { // ✅ ИСПРАВЛЕНО: enabledTestCases
+            JsonNode enableTests = root.get("enabledTestCases");
             List<String> enabledTestCaseIds = new ArrayList<>();
             enableTests.forEach(node -> enabledTestCaseIds.add(node.asText()));
             config.setEnabledTestCaseIds(enabledTestCaseIds);
         }
 
-        if (root.has("disableTestCases") && root.get("disableTestCases").isArray()) {
-            JsonNode disableTests = root.get("disableTestCases");
+        if (root.has("disabledTestCases") && root.get("disabledTestCases").isArray()) { // ✅ ИСПРАВЛЕНО: disabledTestCases
+            JsonNode disableTests = root.get("disabledTestCases");
             List<String> disabledTestCaseIds = new ArrayList<>();
             disableTests.forEach(node -> disabledTestCaseIds.add(node.asText()));
             config.setDisabledTestCaseIds(disabledTestCaseIds);
+        }
+
+        // ✅ ДОБАВЛЕНО: Plugin конфигурация
+        if (root.has("pluginJars") && root.get("pluginJars").isArray()) {
+            JsonNode pluginJarsNode = root.get("pluginJars");
+            List<String> pluginJars = new ArrayList<>();
+            pluginJarsNode.forEach(node -> pluginJars.add(node.asText()));
+            config.setPluginJars(pluginJars);
+        }
+
+        if (root.has("pluginRepositoryUrl")) {
+            config.setPluginRepositoryUrl(root.get("pluginRepositoryUrl").asText());
         }
     }
 
@@ -281,7 +328,7 @@ public class ConfigLoader {
      * @param config The configuration to update
      */
     private void parsePropertiesConfig(Properties props, ScanConfig config) {
-        // Basic settings
+        // ✅ ОСНОВНЫЕ НАСТРОЙКИ (как было)
         if (props.containsKey("targetUrl")) {
             config.setTargetUrl(props.getProperty("targetUrl"));
         }
@@ -315,6 +362,31 @@ public class ConfigLoader {
             config.setVerbose(Boolean.parseBoolean(props.getProperty("verbose")));
         }
 
+        // ✅ КРИТИЧЕСКИЕ ИСПРАВЛЕНИЯ: Open Banking параметры
+        if (props.containsKey("clientId")) {
+            config.setClientId(props.getProperty("clientId")); // ✅ ДОБАВЛЕНО
+        }
+
+        if (props.containsKey("clientSecret")) {
+            config.setClientSecret(props.getProperty("clientSecret")); // ✅ ДОБАВЛЕНО
+        }
+
+        if (props.containsKey("bankId")) {
+            config.setBankId(props.getProperty("bankId")); // ✅ ДОБАВЛЕНО
+        }
+
+        if (props.containsKey("useGost")) {
+            config.setUseGost(Boolean.parseBoolean(props.getProperty("useGost"))); // ✅ ДОБАВЛЕНО
+        }
+
+        if (props.containsKey("consentId")) {
+            config.setConsentId(props.getProperty("consentId")); // ✅ ДОБАВЛЕНО
+        }
+
+        if (props.containsKey("openApiSpecPath")) {
+            config.setOpenApiSpecPath(props.getProperty("openApiSpecPath")); // ✅ ДОБАВЛЕНО
+        }
+
         // Headers
         for (String key : props.stringPropertyNames()) {
             if (key.startsWith("header.")) {
@@ -346,8 +418,8 @@ public class ConfigLoader {
         }
 
         // Test case configuration
-        if (props.containsKey("enableTestCases")) {
-            String enableTests = props.getProperty("enableTestCases");
+        if (props.containsKey("enabledTestCases")) { // ✅ ИСПРАВЛЕНО: enabledTestCases
+            String enableTests = props.getProperty("enabledTestCases");
             String[] testIds = enableTests.split(",");
             List<String> enabledTestCaseIds = new ArrayList<>();
             for (String id : testIds) {
@@ -359,8 +431,8 @@ public class ConfigLoader {
             config.setEnabledTestCaseIds(enabledTestCaseIds);
         }
 
-        if (props.containsKey("disableTestCases")) {
-            String disableTests = props.getProperty("disableTestCases");
+        if (props.containsKey("disabledTestCases")) { // ✅ ИСПРАВЛЕНО: disabledTestCases
+            String disableTests = props.getProperty("disabledTestCases");
             String[] testIds = disableTests.split(",");
             List<String> disabledTestCaseIds = new ArrayList<>();
             for (String id : testIds) {
@@ -395,6 +467,16 @@ public class ConfigLoader {
             case "timeoutminutes" -> config.setTimeoutMinutes(Integer.parseInt(value));
             case "discoveryenabled" -> config.setDiscoveryEnabled(Boolean.parseBoolean(value));
             case "verbose" -> config.setVerbose(Boolean.parseBoolean(value));
+            // ✅ КРИТИЧЕСКИЕ ИСПРАВЛЕНИЯ: Open Banking параметры
+            case "clientid" -> config.setClientId(value); // ✅ ДОБАВЛЕНО
+            case "clientsecret" -> config.setClientSecret(value); // ✅ ДОБАВЛЕНО
+            case "bankid" -> config.setBankId(value); // ✅ ДОБАВЛЕНО
+            case "usegost" -> config.setUseGost(Boolean.parseBoolean(value)); // ✅ ДОБАВЛЕНО
+            case "consentid" -> config.setConsentId(value); // ✅ ДОБАВЛЕНО
+            case "openapispecpath" -> config.setOpenApiSpecPath(value); // ✅ ДОБАВЛЕНО
+            case "attackertoken" -> config.setAttackerToken(value); // ✅ ДОБАВЛЕНО
+            case "victimtoken" -> config.setVictimToken(value); // ✅ ДОБАВЛЕНО
+            case "pluginrepositoryurl" -> config.setPluginRepositoryUrl(value); // ✅ ДОБАВЛЕНО
             case "proxy_host" -> config.setProxyHost(value);
             case "proxy_port" -> config.setProxyPort(Integer.parseInt(value));
             case "proxy_username" -> config.setProxyUsername(value);
@@ -405,7 +487,7 @@ public class ConfigLoader {
                 if (key.startsWith("header_")) {
                     String headerName = key.substring("header_".length());
                     config.addHeader(headerName, value);
-                } else if (key.equals("enabletestcases")) {
+                } else if (key.equals("enabledtestcases")) { // ✅ ИСПРАВЛЕНО: enabledtestcases
                     String[] testIds = value.split(",");
                     List<String> enabledTestCaseIds = new ArrayList<>();
                     for (String id : testIds) {
@@ -415,7 +497,7 @@ public class ConfigLoader {
                         }
                     }
                     config.setEnabledTestCaseIds(enabledTestCaseIds);
-                } else if (key.equals("disabletestcases")) {
+                } else if (key.equals("disabledtestcases")) { // ✅ ИСПРАВЛЕНО: disabledtestcases
                     String[] testIds = value.split(",");
                     List<String> disabledTestCaseIds = new ArrayList<>();
                     for (String id : testIds) {

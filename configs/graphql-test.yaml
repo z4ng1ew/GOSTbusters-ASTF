@@ -1,0 +1,15 @@
+targetUrl: https://vbank.open.bankingapi.ru
+openApiSpecPath: https://vbank.open.bankingapi.ru/openapi.json
+clientId: team179
+clientSecret: JJqqH33ePjnfCMlyHFfz9Px09SMWvzhO
+bankId: vbank
+useGost: false
+enabledTestCases:
+  - GRAPHQL-SECURITY  # ✅ Новый тест GraphQL
+  - BOLA
+  - BROKEN-AUTH
+threads: 1
+timeoutMinutes: 2
+outputFormat: html
+outputFile: target/reports/graphql-report.html
+verbose: true

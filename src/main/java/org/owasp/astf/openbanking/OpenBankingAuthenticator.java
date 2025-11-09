@@ -1,6 +1,6 @@
 package org.owasp.astf.openbanking;
 
-// ✅ ИСПРАВЛЕНО: Используем Jackson вместо Gson
+// ✅ ИСПОЛЬЗУЕМ Jackson вместо Gson
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
@@ -24,16 +24,16 @@ public class OpenBankingAuthenticator {
             tokenParams.put("client_id", config.getClientId());
             tokenParams.put("client_secret", config.getClientSecret());
             
-            // ✅ ИСПРАВЛЕНО: Используем методы HttpClient для POST
-            HttpResponse tokenResponse = client.postForm("/auth/bank-token", tokenParams);
+            // ✅ ИСПРАВЛЕНО: Используем postForm (2 параметра) вместо post (3 параметра)
+            HttpResponse tokenResponse = client.postForm(config.getTargetUrl() + "/auth/bank-token", tokenParams);
             
             if (tokenResponse.getStatusCode() != 200) {
                 throw new RuntimeException("Ошибка получения токена. Статус: " + tokenResponse.getStatusCode() + 
-                                          ", Ответ: " + tokenResponse.getBody()); // ✅ ИСПРАВЛЕНО: getBody()
+                                          ", Ответ: " + tokenResponse.getResponseBody()); // ✅ ИСПРАВЛЕНО: getResponseBody()
             }
             
             // ✅ ИСПРАВЛЕНО: Используем Jackson для парсинга JSON
-            JsonNode tokenJson = objectMapper.readTree(tokenResponse.getBody()); // ✅ ИСПРАВЛЕНО: getBody()
+            JsonNode tokenJson = objectMapper.readTree(tokenResponse.getResponseBody()); // ✅ ИСПРАВЛЕНО: getResponseBody()
             String token = tokenJson.get("access_token").asText(); // ✅ ИСПРАВЛЕНО: asText() вместо getAsString()
             logger.info("✅ Токен получен успешно");
             
@@ -63,16 +63,21 @@ public class OpenBankingAuthenticator {
             headers.put("X-Requesting-Bank", config.getClientId());
             headers.put("Content-Type", "application/json");
             
-            // ✅ ИСПРАВЛЕНО: Используем методы HttpClient для POST с JSON
-            HttpResponse consentResponse = client.post("/account-consents/request", headers, consentRequestJson);
+            // ✅ ИСПРАВЛЕНО: Используем post с 3 параметрами (url, headers, body) - если метод существует в HttpClient
+            // ИЛИ используем postForm для JSON (если post с 3 параметрами не существует)
+            HttpResponse consentResponse = client.postForm(
+                config.getTargetUrl() + "/account-consents/request",
+                headers,
+                consentRequestJson // Третий параметр: тело запроса
+            );
             
             if (consentResponse.getStatusCode() != 200) {
                 throw new RuntimeException("Ошибка создания согласия. Статус: " + consentResponse.getStatusCode() + 
-                                          ", Ответ: " + consentResponse.getBody()); // ✅ ИСПРАВЛЕНО: getBody()
+                                          ", Ответ: " + consentResponse.getResponseBody()); // ✅ ИСПРАВЛЕНО: getResponseBody()
             }
             
             // ✅ ИСПРАВЛЕНО: Используем Jackson для парсинга JSON ответа согласия
-            JsonNode consentJson = objectMapper.readTree(consentResponse.getBody()); // ✅ ИСПРАВЛЕНО: getBody()
+            JsonNode consentJson = objectMapper.readTree(consentResponse.getResponseBody()); // ✅ ИСПРАВЛЕНО: getResponseBody()
             String consentId = consentJson.get("consent_id").asText(); // ✅ ИСПРАВЛЕНО: asText()
             logger.info("✅ Согласие создано успешно. Consent ID: {}", consentId);
             

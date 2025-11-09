@@ -1,4 +1,203 @@
-/Gemfile
-/Gemfile.lock
-/favicon.ico
-_site/
+# ========================
+# Java/Maven
+# ========================
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+.DS_Store
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+.metadata/
+.gradle/
+build/
+target/
+
+# Maven
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml  
+original-*.jar
+
+# IDE
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+*.launch
+.classpath
+.project
+.settings/
+
+# OS
+Thumbs.db
+ehthumbs.db
+Icon?
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs_vista.db
+
+# Logs
+*.log
+logs
+*.out
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
+*.diff
+*.orig
+*.rej
+*.toc
+
+# Local configuration
+local.properties
+local.config
+.env
+config/local/
+configs/local/
+configs/*.local.yaml
+configs/*.local.json
+
+# Test reports
+test-results/
+test-output/
+surefire-reports/
+failsafe-reports/
+jacoco/
+
+# IDE-specific
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+
+# Node.js 
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Coverage
+coverage/
+.coverage/
+.coveralls.yml
+
+# Secrets (never commit these!)
+**/secret**
+**/secrets**
+**/credentials**
+**/creds
+**/token
+**/tokens
+**/password
+**/passwords
+**/key
+**/keys
+**/private
+**/private.key
+**/cert
+**/certs
+**/keystore
+**/truststore
+
+# Artifacts
+*.jar
+*.war
+*.ear
+dist/
+out/
+
+# User-specific configs
+**/user-settings.json
+**/user.config
+**/settings.user
+
+# Maven wrapper (если есть)
+.mvn/wrapper/
+
+# Native compilation (GraalVM, etc.)
+native-image/
+native/
+
+# ========================
+# КОНФИГИРАЦИОННЫЕ ФАЙЛЫ
+# ========================
+# Не игнорировать configs/, но игнорировать секреты
+configs/team179-secrets.yaml
+configs/*.secret.*
+configs/*_secret.*
+
+# Не игнорировать configs/, но игнорировать локальные конфиги
+configs/local-*
+configs/dev-*
+configs/test-*
+
+# Отчеты (генерируются во время сканирования)
+target/reports/
+target/scan-results/
+target/*.html
+target/*.json
+target/*.xml
+target/*.pdf
+target/*.sarif
+
+# ========================
+# ВРЕМЕННЫЕ ФАЙЛЫ ХАКАТОНА
+# ========================
+*.tmp
+*.temp
+tmp/
+temp/
+hackathon-temp/
+demo-results/
+
+# ========================
+# КОНФИГУРАЦИЯ СРЕДЫ
+# ========================
+# IntelliJ IDEA
+out/
+
+# Eclipse
+bin/
+.metadata
+.gradle
+build/
+
+# NetBeans
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# ========================
+# ПРОЧЕЕ
+# ========================
+# Compiled Python files
+*.pyc
+
+# Vim swap files
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+
+# Emacs
+*~
+\#*\#
+/\##*##
+.*.elc

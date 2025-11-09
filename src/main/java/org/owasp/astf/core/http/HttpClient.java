@@ -51,7 +51,7 @@ public class HttpClient {
     private final Map<String, String> defaultHeaders;
     private final Map<String, List<Cookie>> cookieStore = new HashMap<>();
 
-    // ✅ ДОБАВЛЕНО: Поле для хранения последнего статус-кода
+    // ✅ ПОЛЕ ДЛЯ ХРАНЕНИЯ ПОСЛЕДНЕГО СТАТУС-КОДА
     private int lastStatusCode = 0;
 
     /**
@@ -86,8 +86,7 @@ public class HttpClient {
     }
 
     /**
-     * ✅ ДОБАВЛЕНО: Метод получения последнего статус-кода
-     * * @return Последний HTTP статус-код, полученный в результате выполнения запроса
+     * ✅ Метод получения последнего статус-кода
      */
     public int getLastStatusCode() {
         return lastStatusCode;
@@ -103,9 +102,7 @@ public class HttpClient {
      */
     public HttpResponse get(String url, Map<String, String> headers) throws IOException {
         Request request = createRequest(url, "GET", headers, null, null);
-        // ✅ ПРАВКА 2: Явное присвоение и возврат
-        HttpResponse response = executeRequest(request); 
-        return response;
+        return executeRequest(request);
     }
 
     /**
@@ -199,7 +196,7 @@ public class HttpClient {
     }
 
     /**
-     * ✅ ОБНОВЛЕНО: Универсальный метод для выполнения HTTP запросов
+     * ✅ Универсальный метод для выполнения HTTP запросов
      */
     public HttpResponse request(String method, String url, Map<String, String> headers,
                                String contentType, String body) throws IOException {
@@ -214,36 +211,12 @@ public class HttpClient {
         return executeRequest(request);
     }
 
-    /*
-     * ❌ ПРАВКА 1: МЕТОД getStatusCode УДАЛЕН.
-     * Его функциональность заменяется вызовом getFullResponse(..).getStatusCode().
-     */
-
     /**
-     * Метод для получения полного ответа (код + заголовки + тело)
+     * ✅ Метод для получения полного ответа (код + заголовки + тело)
      */
     public HttpResponse getFullResponse(String url, Map<String, String> headers) throws IOException {
         Request request = createRequest(url, "GET", headers, null, null);
         return executeRequest(request);
-    }
-
-    /**
-     * ✅ НОВЫЙ МЕТОД: Преобразует okhttp3.Response в наш внутренний HttpResponse
-     */
-    public HttpResponse convertResponse(okhttp3.Response okHttpResponse) throws IOException {
-        int statusCode = okHttpResponse.code();
-        String body = okHttpResponse.body() != null ? okHttpResponse.body().string() : "";
-
-        // Извлекаем заголовки
-        Map<String, List<String>> headers = new HashMap<>();
-        for (String name : okHttpResponse.headers().names()) {
-            headers.put(name, okHttpResponse.headers(name));
-        }
-
-        // ✅ ОБНОВЛЕНО: Сохраняем статус-код
-        this.lastStatusCode = statusCode;
-
-        return new HttpResponse(statusCode, headers, body);
     }
 
     /**
@@ -277,7 +250,7 @@ public class HttpClient {
                 @Override
                 public void onResponse(Call call, Response response) throws IOException {
                     try (ResponseBody responseBody = response.body()) {
-                        // ✅ ОБНОВЛЕНО: Сохраняем статус-код для асинхронных запросов
+                        // ✅ СОХРАНЯЕМ СТАТУС-КОД ДЛЯ АСИНХРОННЫХ ЗАПРОСОВ
                         lastStatusCode = response.code();
                         String body = responseBody != null ? responseBody.string() : "";
                         Map<String, List<String>> headers = extractHeaders(response);
@@ -312,7 +285,7 @@ public class HttpClient {
             case "GET" -> requestBuilder.get();
             case "HEAD" -> requestBuilder.head();
             case "DELETE" -> requestBuilder.delete();
-            case "OPTIONS" -> requestBuilder.method("OPTIONS", null); // ✅ ДОБАВЛЕНО: OPTIONS method
+            case "OPTIONS" -> requestBuilder.method("OPTIONS", null);
             case "POST" -> requestBuilder.post(body);
             case "PUT" -> requestBuilder.put(body);
             case "PATCH" -> requestBuilder.patch(body);
@@ -341,7 +314,7 @@ public class HttpClient {
     }
 
     /**
-     * ✅ ОБНОВЛЕНО: Executes a request and returns the full HttpResponse object.
+     * Executes a request and returns the full HttpResponse object.
      *
      * @param request The HTTP request to execute
      * @return The full response object (HttpResponse)
@@ -349,7 +322,7 @@ public class HttpClient {
      */
     private HttpResponse executeRequest(Request request) throws IOException {
         try (okhttp3.Response response = client.newCall(request).execute()) {
-            // ✅ СОХРАНЯЕМ статус-код
+            // ✅ СОХРАНЯЕМ СТАТУС-КОД
             this.lastStatusCode = response.code();
 
             String body = response.body() != null ? response.body().string() : "";
@@ -420,7 +393,7 @@ public class HttpClient {
     }
 
     /**
-     * Класс для представления полного HTTP ответа
+     * ✅ Класс для представления полного HTTP ответа
      */
     public static class HttpResponse {
         private final int statusCode;
