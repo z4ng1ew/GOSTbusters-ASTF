@@ -2618,3 +2618,25 @@ java -jar target/gostbusters-astf-1.0-SNAPSHOT.jar scan --config configs/vbank.y
 
 
 Мы реализовали SPI-архитектуру для автоматического определения CI/CD окружения. Наш сканер сам распознаёт, когда он запущен в GitHub Actions, Jenkins или GitLab CI, и автоматически адаптирует поведение под каждую платформу.
+
+
+
+
+
+
+
+
+
+
+
+# 1. СОБЕРИ CORE СНАЧАЛА:
+cd C:\Users\user\Desktop\GOSTbusters-ASTF\core
+mvn clean install
+
+# 2. ЗАТЕМ СОБЕРИ PLUGIN-API:
+cd ..\plugin-api
+mvn clean install
+
+# 3. НАЗАД К ОСНОВНОМУ ПРОЕКТУ:
+cd ..
+mvn clean package

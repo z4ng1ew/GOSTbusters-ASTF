@@ -1,6 +1,8 @@
 package com.example.plugins;
 
 import org.apache.http.client.methods.HttpGet;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.owasp.astf.core.EndpointInfo;
 import org.owasp.astf.core.http.HttpClient;
 import org.owasp.astf.core.http.HttpResponse;
@@ -8,10 +10,7 @@ import org.owasp.astf.core.result.Finding;
 import org.owasp.astf.core.result.Severity;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 
 /**
  * Example BOLA (Broken Object Level Authorization) Plugin.
@@ -22,7 +21,9 @@ import java.util.HashMap;
  * 
  * @see <a href="https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/">OWASP API Security Top 10 2023: API1 Broken Object Level Authorization</a>
  */
-public class ExampleBolaPlugin implements org.owasp.astf.plugin.Plugin {
+public class ExampleBolaPlugin implements org.owasp.astf.plugin.Plugin { // ✅ Правильный путь к интерфейсу
+    private static final Logger logger = LogManager.getLogger(ExampleBolaPlugin.class);
+
     @Override
     public String getId() {
         return "PLUGIN-BOLA-01";
@@ -45,162 +46,154 @@ public class ExampleBolaPlugin implements org.owasp.astf.plugin.Plugin {
     @Override
     public List<Finding> execute(EndpointInfo endpoint, HttpClient client) throws IOException {
         List<Finding> findings = new ArrayList<>();
+        logger.info("Plugin: Testing BOLA on {}", endpoint.getPath());
 
         // ✅ ПРОВЕРЯЕМ: содержит ли эндпоинт параметр ID (подходит для BOLA)
         String path = endpoint.getPath().toLowerCase();
         if (!path.contains("{id}") && 
             !path.contains("{account_id}") && 
             !path.contains("{accountId}")) {
-            // Нет параметров ID → не для BOLA
+            logger.debug("Plugin: Skipping non-BOLA endpoint: {}", endpoint.getPath());
             return findings;
         }
 
         System.out.println("🔌 Plugin: Testing BOLA on " + endpoint.getMethod() + " " + endpoint.getPath());
 
         // ✅ ГЕНЕРИРУЕМ ПОДОЗРИТЕЛЬНЫЕ ID ДЛЯ ТЕСТИРОВАНИЯ
-        List<String> suspiciousIds = List.of(
-            "acc-999-999",  // ❌ Чужой ID
-            "acc-888-888",  // ❌ Чужой ID
-            "acc-000-000",  // ❌ Несуществующий ID
-            "123456789",    // ❌ Простой числовой ID
-            "admin",       // ❌ Слово "admin"
-            "root",        // ❌ Слово "root"
-            "0"            // ❌ Нулевой ID
-        );
+        List<String> suspiciousIds = generateSuspiciousAccountIds();
 
-        // ✅ ПОЛУЧАЕМ АУТЕНТИФИКАЦИОННЫЕ ЗАГОЛОВКИ ИЗ КЛИЕНТА
-        Map<String, String> authHeaders = getAuthHeadersFromClient(client);
+        // ✅ ИСПОЛЬЗУЕМ ЗАГОЛОВКИ ИЗ КЛИЕНТА (уже содержит токены и согласие)
+        Map<String, String> authHeaders = client.getDefaultHeaders(); // ✅ ИСПРАВЛЕНО: метод из твоего HttpClient
 
         int vulnerableCount = 0;
 
-        for (String suspiciousId : suspiciousIds) {
+        for (String accountId : suspiciousIds) {
             try {
-                // ✅ ЗАМЕНЯЕМ ПАРАМЕТР В URL
+                // ✅ ЗАМЕНЯЕМ {id} НА ПОДОЗРИТЕЛЬНЫЙ ID
                 String testUrl = endpoint.getFullUrl()
-                    .replace("{id}", suspiciousId)
-                    .replace("{account_id}", suspiciousId)
-                    .replace("{accountId}", suspiciousId);
+                    .replace("{id}", accountId)
+                    .replace("{account_id}", accountId)
+                    .replace("{accountId}", accountId);
+
+                logger.debug("Plugin: Testing access to foreign account: {}", testUrl);
 
                 // ✅ ИСПРАВЛЕНО: Используем executeRequest с двумя параметрами
-                HttpResponse response = client.executeRequest(
-                    new HttpGet(testUrl),
-                    authHeaders // ✅ Используем реальные заголовки аутентификации
-                );
+                HttpResponse response = client.executeRequest(new HttpGet(testUrl), authHeaders);
 
                 int statusCode = response.getStatusCode();
                 String responseBody = response.getResponseBody(); // ✅ ИСПРАВЛЕНО: getResponseBody()
-                String responseHeaders = response.getHeaders().toString(); // ✅ ИСПРАВЛЕНО: getHeaders()
 
-                // ✅ АНАЛИЗИРУЕМ ОТВЕТ НА ПРИЗНАКИ УЯЗВИМОСТИ
-                if (isBolaVulnerable(statusCode, responseBody, responseHeaders)) {
+                logger.debug("Plugin: Response for {} - Status: {}, Body length: {}", accountId, statusCode, responseBody.length());
+
+                // ✅ АНАЛИЗИРУЕМ ОТВЕТ: уязвимость если 200 OK + данные счета
+                if (statusCode == 200 && containsAccountData(responseBody)) {
                     findings.add(new Finding(
-                        getId(),
-                        "Broken Object Level Authorization (BOLA) via Plugin",
-                        "🚨 CRITICAL: Plugin detected successful access to foreign account via ID manipulation.\n\n" +
+                        "PLUGIN-BOLA-01",
+                        "BOLA Vulnerability via Plugin",
+                        "🚨 CRITICAL: Successfully accessed foreign account " + accountId + " with current token!\n\n" +
                         "• Endpoint: " + endpoint.getMethod() + " " + endpoint.getPath() + "\n" +
-                        "• Manipulated ID: " + suspiciousId + "\n" +
+                        "• Foreign Account ID: " + accountId + "\n" +
                         "• Response Status: " + statusCode + "\n" +
-                        "• Response Length: " + responseBody.length() + " chars\n" +
-                        "• Impact: Attackers can access other users' accounts by changing ID parameter",
+                        "• Impact: Attackers can access other users' accounts by manipulating ID parameter",
                         Severity.CRITICAL,
                         getId(),
                         testUrl,
                         "✅ CRITICAL REMEDIATION REQUIRED:\n\n" +
                         "1. IMPLEMENT OBJECT OWNERSHIP VALIDATION\n" +
-                        "   • Verify that requested account_id belongs to authenticated user\n" +
-                        "   • Use JOIN queries: WHERE user_id = :current_user_id AND account_id = :requested_id\n\n" +
+                        "   • Verify that account_id belongs to authenticated user\n" +
+                        "   • Use JOIN queries: WHERE user_id = :current_user_id\n\n" +
                         "2. APPLY RBAC CONTROLS\n" +
-                        "   • Implement role-based access control\n" +
-                        "   • Validate permissions for each account access\n\n" +
+                        "   • Define permissions per object type\n" +
+                        "   • Validate access for each object request\n\n" +
                         "3. USE NON-PREDICTABLE IDS\n" +
                         "   • Replace sequential IDs with UUIDs\n" +
                         "   • Obfuscate internal object identifiers\n\n" +
                         "4. LOG UNAUTHORIZED ACCESS ATTEMPTS\n" +
-                        "   • Track attempts to access foreign objects\n" +
+                        "   • Track access to foreign objects\n" +
                         "   • Alert on suspicious ID patterns"
                     ));
                     vulnerableCount++;
-                    System.out.println("🚨 PLUGIN DETECTED BOLA: access to " + suspiciousId);
+                    System.out.println("🚨 PLUGIN BOLA VULNERABILITY: access to " + accountId);
                 } else if (statusCode == 403 || statusCode == 404) {
-                    // ✅ ЗАЩИТА РАБОТАЕТ
-                    System.out.println("✅ Plugin: BOLA protection working for ID " + suspiciousId);
+                    logger.debug("Plugin: BOLA protection working for account: {}", accountId);
                 } else {
-                    System.out.println("🔍 Plugin: Status " + statusCode + " for ID " + suspiciousId);
+                    logger.debug("Plugin: Unexpected status {} for account: {}", statusCode, accountId);
                 }
 
             } catch (Exception e) {
-                // ✅ ОШИБКА ПРИ ЗАПРОСЕ = ЗАЩИТА РАБОТАЕТ (или проблема с сетью)
-                System.out.println("✅ Plugin: Error accessing " + suspiciousId + " (likely protected)");
+                String errorMsg = e.getMessage();
+                if (errorMsg != null) {
+                    if (errorMsg.contains("429")) {
+                        System.out.println("⚠️ Rate limit hit, pausing...");
+                        try { Thread.sleep(1000); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                    } else if (errorMsg.contains("403") || errorMsg.contains("404")) {
+                        logger.debug("Plugin: BOLA protection active: {}", errorMsg);
+                    } else {
+                        logger.warn("Plugin: Error testing account {}: {}", accountId, errorMsg);
+                    }
+                }
             }
         }
 
-        if (vulnerableCount == 0) {
-            // ✅ ДОБАВЛЕНО: Finding для доказательства защиты
-            findings.add(new Finding(
-                "PLUGIN-BOLA-PROTECTED",
-                "BOLA Protection Verified (Plugin Test)",
-                "✅ Plugin test confirmed that BOLA protection is working.\n\n" +
-                "• Tested " + suspiciousIds.size() + " foreign account IDs\n" +
-                "• All attempts returned 403/404 or error\n" +
-                "• API correctly validates object ownership\n" +
-                "• No Broken Object Level Authorization vulnerabilities detected",
-                Severity.INFO,
-                getId(),
-                endpoint.getFullUrl(),
-                "✅ Excellent! Maintain current security controls.\n" +
-                "Continue monitoring for new BOLA attack vectors."
-            ));
-            System.out.println("✅ Plugin: BOLA protection verified for " + endpoint.getPath());
+        if (vulnerableCount > 0) {
+            System.out.println("🎯 Plugin: Found " + vulnerableCount + " BOLA vulnerabilities");
         } else {
-            System.out.println("🔌 Plugin: Found " + vulnerableCount + " BOLA vulnerabilities on " + endpoint.getPath());
+            System.out.println("✅ Plugin: BOLA protection working (no vulnerabilities found)");
         }
 
         return findings;
     }
 
     /**
-     * ✅ Проверяет, является ли ответ уязвимым к BOLA
+     * ✅ Генерирует подозрительные account ID для других команд
      */
-    private boolean isBolaVulnerable(int statusCode, String responseBody, String responseHeaders) {
-        if (responseBody == null) {
-            return false;
+    private List<String> generateSuspiciousAccountIds() {
+        List<String> ids = new ArrayList<>();
+        
+        // ✅ ID других команд (для хакатона)
+        for (int teamNum = 170; teamNum <= 190; teamNum++) {
+            if (teamNum != 179) { // Не наша команда
+                ids.add("acc-" + teamNum + "-1");
+                ids.add("acc-" + teamNum + "-2");
+            }
         }
-
-        // ✅ УЯЗВИМОСТЬ: 200 OK + чувствительные данные
-        if (statusCode == 200) {
-            String lowerBody = responseBody.toLowerCase();
-            
-            // ✅ Проверяем, содержит ли ответ данные счета
-            boolean hasAccountData = lowerBody.contains("account") &&
-                                   (lowerBody.contains("balance") || 
-                                    lowerBody.contains("amount") ||
-                                    lowerBody.contains("owner") ||
-                                    lowerBody.contains("number") ||
-                                    lowerBody.contains("iban"));
-            
-            // ✅ Убедимся, что это не ошибка
-            boolean isNotError = !lowerBody.contains("error") &&
-                               !lowerBody.contains("forbidden") &&
-                               !lowerBody.contains("access denied") &&
-                               !lowerBody.contains("not found");
-            
-            return hasAccountData && isNotError && responseBody.length() > 50;
-        }
-
-        // ✅ ТАКЖЕ УЯЗВИМОСТЬ: 200 OK + пустой/короткий ответ (подозрительно)
-        return statusCode == 200 && responseBody.length() < 50;
+        
+        // ✅ Общие подозрительные ID
+        ids.addAll(List.of(
+            "acc-999-999", "acc-888-888", "acc-000-000", // Чужие/несуществующие
+            "123456789", "admin", "root", "0", "test"  // Простые ID
+        ));
+        
+        return ids;
     }
 
     /**
-     * ✅ Получает аутентификационные заголовки из клиента
-     * (предполагаем, что они уже установлены в Scanner через OpenBankingAuthenticator)
+     * ✅ Проверяет, содержит ли ответ данные счета (признак уязвимости)
      */
-    private Map<String, String> getAuthHeadersFromClient(HttpClient client) {
-        // ✅ В реальной реализации: получить заголовки из клиента
-        // Для хакатона возвращаем пустой map (или можно использовать client.getDefaultHeaders())
-        Map<String, String> headers = new HashMap<>();
-        headers.put("Content-Type", "application/json");
-        // Заголовки аутентификации должны быть уже установлены в Scanner
-        return headers;
+    private boolean containsAccountData(String response) {
+        if (response == null || response.trim().isEmpty()) {
+            return false;
+        }
+
+        String lowerResponse = response.toLowerCase();
+
+        // ✅ Проверяем наличие чувствительных данных счета
+        boolean hasAccountFields = lowerResponse.contains("account") &&
+                                   (lowerResponse.contains("balance") || 
+                                    lowerResponse.contains("amount") ||
+                                    lowerResponse.contains("owner") ||
+                                    lowerResponse.contains("iban") ||
+                                    lowerResponse.contains("number"));
+
+        // ✅ Убеждаемся, что это не сообщение об ошибке
+        boolean isNotError = !lowerResponse.contains("error") &&
+                            !lowerResponse.contains("forbidden") &&
+                            !lowerResponse.contains("access denied") &&
+                            !lowerResponse.contains("unauthorized");
+
+        // ✅ Проверяем достаточный размер ответа (не пустой/короткий)
+        boolean hasSubstantialData = response.length() > 50;
+
+        return hasAccountFields && isNotError && hasSubstantialData;
     }
 }
