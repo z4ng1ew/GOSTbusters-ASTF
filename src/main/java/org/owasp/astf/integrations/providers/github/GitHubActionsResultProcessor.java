@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
  */
 public class GitHubActionsResultProcessor implements ResultProcessor {
     private static final Logger logger = LogManager.getLogger(GitHubActionsResultProcessor.class);
-    private static final DateTimeFormatter timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME; // ✅ Уже объявлен
+    private static final DateTimeFormatter timeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     @Override
     public boolean processResults(ScanResult results, CIEnvironment environment) {
@@ -53,15 +53,14 @@ public class GitHubActionsResultProcessor implements ResultProcessor {
             // Write summary as markdown
             writeSummaryMarkdown(results, outputDir);
 
-            // ✅ ИСПРАВЛЕНО: Используем ScanConfig.OutputFormat вместо ReportGeneratorFactory.OutputFormat
             // Write detailed results as JSON
-            createReport(results, ScanConfig.OutputFormat.JSON, outputDir.resolve("results.json").toFile());
+            createReport(results, ReportGeneratorFactory.OutputFormat.JSON, outputDir.resolve("results.json").toFile());
 
             // Write SARIF format for GitHub Code Scanning
-            createReport(results, ScanConfig.OutputFormat.SARIF, outputDir.resolve("results.sarif").toFile());
+            createReport(results, ReportGeneratorFactory.OutputFormat.SARIF, outputDir.resolve("results.sarif").toFile());
 
             // Write HTML report for detailed view
-            createReport(results, ScanConfig.OutputFormat.HTML, outputDir.resolve("report.html").toFile());
+            createReport(results, ReportGeneratorFactory.OutputFormat.HTML, outputDir.resolve("report.html").toFile());
 
             return true;
         } catch (Exception e) {
@@ -187,7 +186,6 @@ public class GitHubActionsResultProcessor implements ResultProcessor {
         // Add scan metadata
         sb.append("## Scan Information\n\n");
         sb.append("- **Target URL**: ").append(results.getTargetUrl()).append("\n");
-        // ✅ ИСПРАВЛЕНО: Используем локальный timeFormatter из класса
         sb.append("- **Scan Time**: ").append(results.getScanStartTime().format(timeFormatter)).append("\n");
         
         // ✅ ИСПРАВЛЕНО: Подсчёт длительности
@@ -233,7 +231,7 @@ public class GitHubActionsResultProcessor implements ResultProcessor {
     }
 
     @Override
-    public boolean createReport(ScanResult results, ScanConfig.OutputFormat format, File outputFile) { // ✅ ИСПРАВЛЕНО: используем ScanConfig.OutputFormat
+    public boolean createReport(ScanResult results, ReportGeneratorFactory.OutputFormat format, File outputFile) { // ✅ ИСПРАВЛЕНО: правильный OutputFormat
         try {
             // ✅ ИСПРАВЛЕНО: Используем ReportGeneratorFactory.createGenerator()
             ReportGenerator generator = ReportGeneratorFactory.createGenerator(format);

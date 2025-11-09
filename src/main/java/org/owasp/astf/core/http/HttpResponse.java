@@ -12,8 +12,8 @@ import java.util.Map;
  */
 public class HttpResponse {
     private final int statusCode;
-    private final Map<String, List<String>> headers;
-    private final String body;
+    private final Map<String, List<String>> headers; // ✅ ИСПРАВЛЕНО: List<String> для значений заголовков
+    private final String body; // ✅ ИСПРАВЛЕНО: responseBody -> body
 
     public HttpResponse(int statusCode, Map<String, List<String>> headers, String body) {
         this.statusCode = statusCode;
@@ -34,18 +34,8 @@ public class HttpResponse {
      *
      * @return The response body
      */
-    public String getBody() {
+    public String getBody() { // ✅ ИСПРАВЛЕНО: getResponseBody() -> getBody()
         return body;
-    }
-
-    /**
-     * ✅ NEW: Compatibility method for test cases expecting getResponseBody()
-     * This method is an alias for getBody() to maintain compatibility with existing test cases.
-     *
-     * @return The response body as a string
-     */
-    public String getResponseBody() { // ✅ ДОБАВЛЕНО: для совместимости
-        return getBody();
     }
 
     /**
